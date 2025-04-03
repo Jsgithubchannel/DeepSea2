@@ -6,29 +6,37 @@ import 'package:jellyfish_test/core/controllers/user_controller.dart';
 import 'package:jellyfish_test/core/theme/app_theme.dart';
 import 'package:jellyfish_test/data/models/jellyfish_model.dart';
 import 'package:jellyfish_test/app/app_routes.dart';
+import 'presentation/screens/auth_wrapper.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart'; // flutterfire configure로 생성된 파일
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   try {
     print('앱 초기화 중...');
-    
+
     // Hive 초기화
     await Hive.initFlutter();
-    
+
     // 모델 어댑터 등록
     Hive.registerAdapter(DangerLevelAdapter());
     Hive.registerAdapter(JellyfishAdapter());
-    
+
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    print('Firebase 초기화 완료');
+
     // 컨트롤러 등록
     Get.put(JellyfishController());
     Get.put(UserController());
-    
+
     // onInit 메서드가 자동으로 호출되어 초기화가 진행됩니다
     // onInit에서 isLoading 상태가 관리되며 HomeScreen에서 이를 관찰합니다
-    
+
     print('앱 초기화 완료!');
-    
+
     runApp(const MyApp());
   } catch (e) {
     print('앱 초기화 중 오류 발생: $e');
@@ -40,7 +48,7 @@ void main() async {
 /// 앱의 진입점 클래스
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
-  
+
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
@@ -68,6 +76,7 @@ class MyApp extends StatelessWidget {
       ),
       initialRoute: AppRoutes.initial,
       getPages: AppRoutes.routes,
+      home: AuthWrapper(),
     );
   }
 }
@@ -75,36 +84,26 @@ class MyApp extends StatelessWidget {
 /// 에러 발생 시 표시할 앱
 class ErrorApp extends StatelessWidget {
   const ErrorApp({Key? key}) : super(key: key);
-  
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: '해파리 도감 - 오류',
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        useMaterial3: true,
-      ),
+      theme: ThemeData(brightness: Brightness.dark, useMaterial3: true),
       home: Scaffold(
         body: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                AppTheme.azureStart,
-                AppTheme.azureEnd,
-              ],
+              colors: [AppTheme.azureStart, AppTheme.azureEnd],
             ),
           ),
           child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
-                  Icons.error_outline,
-                  size: 80,
-                  color: Colors.white,
-                ),
+                const Icon(Icons.error_outline, size: 80, color: Colors.white),
                 const SizedBox(height: 24),
                 const Text(
                   '앱 초기화 중 오류가 발생했습니다',
