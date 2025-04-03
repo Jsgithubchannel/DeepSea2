@@ -1,32 +1,132 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-// import 'package:deepsea2/screens/auth_wrapper.dart'; // 경로는 실제 프로젝트 이름에 맞게 확인/수정하세요.
-import 'screens/auth_wrapper.dart'; // 위 import 대신 이 방식을 사용해도 됩니다 (같은 lib 폴더 내이므로)
-import 'firebase_options.dart'; // FlutterFire CLI로 생성된 파일
+import 'package:get/get.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:jellyfish_test/core/controllers/jellyfish_controller.dart';
+import 'package:jellyfish_test/core/controllers/user_controller.dart';
+import 'package:jellyfish_test/core/theme/app_theme.dart';
+import 'package:jellyfish_test/data/models/jellyfish_model.dart';
+import 'package:jellyfish_test/app/app_routes.dart';
 
 void main() async {
-  // Flutter 엔진과 위젯 바인딩 초기화 보장
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Firebase 앱 초기화
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform, // firebase_options.dart 사용
-  );
-
-  runApp(MyApp());
+  
+  try {
+    print('앱 초기화 중...');
+    
+    // Hive 초기화
+    await Hive.initFlutter();
+    
+    // 모델 어댑터 등록
+    Hive.registerAdapter(DangerLevelAdapter());
+    Hive.registerAdapter(JellyfishAdapter());
+    
+    // 컨트롤러 등록
+    Get.put(JellyfishController());
+    Get.put(UserController());
+    
+    // onInit 메서드가 자동으로 호출되어 초기화가 진행됩니다
+    // onInit에서 isLoading 상태가 관리되며 HomeScreen에서 이를 관찰합니다
+    
+    print('앱 초기화 완료!');
+    
+    runApp(const MyApp());
+  } catch (e) {
+    print('앱 초기화 중 오류 발생: $e');
+    // 에러 화면을 표시하거나 재시도 로직을 구현할 수 있습니다
+    runApp(const ErrorApp());
+  }
 }
 
+/// 앱의 진입점 클래스
 class MyApp extends StatelessWidget {
+  const MyApp({Key? key}) : super(key: key);
+  
+  @override
+  Widget build(BuildContext context) {
+    return GetMaterialApp(
+      title: '해파리 감식반 GO',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        fontFamily: 'Pretendard',
+        scaffoldBackgroundColor: Colors.white,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+          elevation: 0,
+          centerTitle: true,
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.primary,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+      ),
+      initialRoute: AppRoutes.initial,
+      getPages: AppRoutes.routes,
+    );
+  }
+}
+
+/// 에러 발생 시 표시할 앱
+class ErrorApp extends StatelessWidget {
+  const ErrorApp({Key? key}) : super(key: key);
+  
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Firebase Google Auth', // 앱 제목
+      title: '해파리 도감 - 오류',
       theme: ThemeData(
-        primarySwatch: Colors.blue, // 앱 테마 색상 (선택 사항)
-        visualDensity: VisualDensity.adaptivePlatformDensity,
+        brightness: Brightness.dark,
+        useMaterial3: true,
       ),
-      // 앱 시작 시 로그인 상태에 따라 화면을 분기하는 AuthWrapper를 홈으로 설정
-      home: AuthWrapper(),
+      home: Scaffold(
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                AppTheme.azureStart,
+                AppTheme.azureEnd,
+              ],
+            ),
+          ),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  size: 80,
+                  color: Colors.white,
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  '앱 초기화 중 오류가 발생했습니다',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    // 앱 재시작
+                    main();
+                  },
+                  child: const Text('다시 시도'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
