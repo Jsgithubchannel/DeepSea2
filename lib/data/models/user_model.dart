@@ -1,4 +1,5 @@
 import 'package:hive/hive.dart';
+import 'package:jellyfish_test/data/models/exp_constants.dart';
 
 part 'user_model.g.dart';
 
@@ -25,6 +26,10 @@ class User {
   @HiveField(4)
   final int discoveredJellyfishCount;
   
+  /// 제보한 해파리 수
+  @HiveField(9)
+  final int reportedJellyfishCount;
+  
   /// 획득한 배지 수
   @HiveField(5)
   final int badgeCount;
@@ -47,6 +52,7 @@ class User {
     required this.exp,
     required this.level,
     required this.discoveredJellyfishCount,
+    this.reportedJellyfishCount = 0,
     required this.badgeCount,
     required this.completedQuizIds,
     this.lastLoginDate,
@@ -54,7 +60,7 @@ class User {
   });
   
   /// 레벨업에 필요한 경험치
-  int get expToNextLevel => level * 100;
+  int get expToNextLevel => ExpConstants.requiredExpForLevel(level);
   
   /// 다음 레벨까지 남은 경험치
   int get remainingExp => expToNextLevel - (exp % expToNextLevel);
@@ -66,20 +72,7 @@ class User {
   
   /// 사용자 레벨에 해당하는 칭호 반환
   String get title {
-    switch (level) {
-      case 1:
-        return '초보 감식반';
-      case 2:
-        return '견습 감식반';
-      case 3:
-        return '현장 감식반';
-      case 4:
-        return '선임 연구원';
-      case 5:
-        return '해파리 박사';
-      default:
-        return '초보 감식반';
-    }
+    return ExpConstants.LEVEL_TITLES[level] ?? ExpConstants.LEVEL_TITLES[1]!;
   }
   
   /// 경험치 추가 및 레벨업 처리
@@ -87,10 +80,19 @@ class User {
     int newExp = exp + amount;
     int newLevel = level;
     
-    // 레벨업 계산
-    while (newExp >= newLevel * 100) {
-      newExp -= newLevel * 100;
+    // 현재 레벨에 필요한 경험치
+    int requiredExp = ExpConstants.requiredExpForLevel(newLevel);
+    
+    // 레벨업 계산 - 새 로직
+    while (newExp >= requiredExp) {
+      // 현재 레벨업에 필요한 경험치를 소비
+      newExp -= requiredExp;
+      
+      // 레벨 증가
       newLevel++;
+      
+      // 다음 레벨에 필요한 경험치 업데이트
+      requiredExp = ExpConstants.requiredExpForLevel(newLevel);
     }
     
     return copyWith(
@@ -106,6 +108,7 @@ class User {
     int? exp,
     int? level,
     int? discoveredJellyfishCount,
+    int? reportedJellyfishCount,
     int? badgeCount,
     List<int>? completedQuizIds,
     DateTime? lastLoginDate,
@@ -117,6 +120,7 @@ class User {
       exp: exp ?? this.exp,
       level: level ?? this.level,
       discoveredJellyfishCount: discoveredJellyfishCount ?? this.discoveredJellyfishCount,
+      reportedJellyfishCount: reportedJellyfishCount ?? this.reportedJellyfishCount,
       badgeCount: badgeCount ?? this.badgeCount,
       completedQuizIds: completedQuizIds ?? this.completedQuizIds,
       lastLoginDate: lastLoginDate ?? this.lastLoginDate,
@@ -132,6 +136,7 @@ class User {
       exp: 0,
       level: 1,
       discoveredJellyfishCount: 0,
+      reportedJellyfishCount: 0,
       badgeCount: 0,
       completedQuizIds: [],
       lastLoginDate: DateTime.now(),
@@ -147,6 +152,7 @@ class User {
       'exp': exp,
       'level': level,
       'discoveredJellyfishCount': discoveredJellyfishCount,
+      'reportedJellyfishCount': reportedJellyfishCount,
       'badgeCount': badgeCount,
       'completedQuizIds': completedQuizIds,
       'lastLoginDate': lastLoginDate?.toIso8601String(),
@@ -162,6 +168,7 @@ class User {
       exp: json['exp'] as int,
       level: json['level'] as int,
       discoveredJellyfishCount: json['discoveredJellyfishCount'] as int,
+      reportedJellyfishCount: json['reportedJellyfishCount'] as int? ?? 0,
       badgeCount: json['badgeCount'] as int,
       completedQuizIds: List<int>.from(json['completedQuizIds'] as List),
       lastLoginDate: json['lastLoginDate'] != null

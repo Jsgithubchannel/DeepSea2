@@ -1,9 +1,13 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jellyfish_test/app/app_routes.dart';
 import 'package:jellyfish_test/core/theme/app_theme.dart';
 import 'package:jellyfish_test/core/theme/glass_container.dart';
 import 'package:jellyfish_test/presentation/widgets/navigation_bar.dart';
+import 'package:jellyfish_test/core/controllers/user_controller.dart';
+import 'package:jellyfish_test/data/models/exp_constants.dart';
+import 'package:lottie/lottie.dart';
 
 /// 퀴즈 모델 클래스
 class Quiz {
@@ -36,6 +40,38 @@ class Quiz {
     this.imagePath,
     this.points = 0,
   });
+
+  Quiz copyWith({
+    String? id,
+    String? title,
+    String? description,
+    String? question,
+    List<String>? options,
+    int? correctAnswer,
+    String? explanation,
+    QuizType? type,
+    DateTime? releaseDate,
+    DateTime? expiryDate,
+    bool? isCompleted,
+    String? imagePath,
+    int? points,
+  }) {
+    return Quiz(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      question: question ?? this.question,
+      options: options ?? this.options,
+      correctAnswer: correctAnswer ?? this.correctAnswer,
+      explanation: explanation ?? this.explanation,
+      type: type ?? this.type,
+      releaseDate: releaseDate ?? this.releaseDate,
+      expiryDate: expiryDate ?? this.expiryDate,
+      isCompleted: isCompleted ?? this.isCompleted,
+      imagePath: imagePath ?? this.imagePath,
+      points: points ?? this.points,
+    );
+  }
 }
 
 /// 퀴즈 타입 열거형
@@ -153,17 +189,76 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
   final RxInt _remainingSeconds = 0.obs;
   final RxDouble _timerProgress = 0.0.obs;
 
+  // 유저 컨트롤러
+  final UserController _userController = Get.find<UserController>();
+
+  // 완료된 퀴즈 목록 (RxSet 대신 RxList 사용)
+  final RxList<Quiz> _completedQuizzes = <Quiz>[].obs;
+
+  // 경험치 획득 애니메이션 컨트롤러
+  late AnimationController _expAnimationController;
+  late Animation<double> _expAnimation;
+  
+  // 축하 애니메이션 컨트롤러
+  late AnimationController _celebrationController;
+  late Animation<double> _celebrationAnimation;
+  
+  // 현재 퀴즈 결과 상태
+  final RxBool _showQuizResult = false.obs;
+  final RxBool _isCorrectAnswer = false.obs;
+  final Rx<Quiz> _currentQuiz = Quiz(
+    id: '',
+    title: '',
+    description: '',
+    question: '',
+    options: [],
+    correctAnswer: 0,
+    explanation: '',
+    type: QuizType.daily,
+  ).obs;
+
   @override
   void initState() {
     super.initState();
+    
+    // 탭 컨트롤러 초기화
     _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(() {
-      if (!_tabController.indexIsChanging) {
-        _currentTab.value = _tabController.index;
-      }
+      _currentTab.value = _tabController.index;
     });
     
-    _pageController = PageController(viewportFraction: 0.9);
+    // 페이지 컨트롤러 초기화
+    _pageController = PageController();
+    
+    // 애니메이션 컨트롤러 초기화
+    _expAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+    
+    _expAnimation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(
+        parent: _expAnimationController,
+        curve: Curves.elasticOut,
+      ),
+    );
+    
+    // 축하 애니메이션 컨트롤러
+    _celebrationController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+    
+    // 축하 애니메이션 초기화
+    _celebrationAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _celebrationController,
+        curve: Curves.easeInOut,
+      ),
+    );
+    
+    // 비동기로 완료된 퀴즈 초기화
+    _initCompletedQuizzesAsync();
     
     // 돌발 퀴즈 타이머 설정
     _updateEmergencyQuizTimer();
@@ -173,6 +268,8 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
   void dispose() {
     _tabController.dispose();
     _pageController.dispose();
+    _expAnimationController.dispose();
+    _celebrationController.dispose();
     super.dispose();
   }
   
@@ -212,36 +309,163 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              AppTheme.azureStart,
-              AppTheme.azureEnd,
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              _buildAppBar(),
-              _buildTabBar(),
-              Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildDailyQuizTab(),
-                    _buildEmergencyQuizTab(),
-                    _buildCompletedQuizTab(),
-                  ],
-                ),
+      body: Stack(
+        children: [
+          Container(
+            height: double.infinity,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  AppTheme.azureStart,
+                  AppTheme.azureEnd,
+                ],
               ),
-            ],
+            ),
+            child: SafeArea(
+              child: Column(
+                children: [
+                  _buildAppBar(),
+                  _buildTabBar(),
+                  Expanded(
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        _buildDailyQuizTab(),
+                        _buildEmergencyQuizTab(),
+                        _buildCompletedQuizTab(),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
+          
+          // 경험치 획득 알림 (개선된 애니메이션)
+          Obx(() => _userController.showExpNotification
+            ? Positioned(
+                top: MediaQuery.of(context).padding.top + 60,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: TweenAnimationBuilder<double>(
+                    tween: Tween<double>(begin: 0.0, end: 1.0),
+                    duration: const Duration(milliseconds: 500),
+                    curve: Curves.elasticOut,
+                    builder: (context, value, child) {
+                      return Transform.scale(
+                        scale: value,
+                        child: child,
+                      );
+                    },
+                    onEnd: () {
+                      // 끝날 때 약간의 흔들림 효과
+                      _expAnimationController.forward(from: 0.0);
+                    },
+                    child: AnimatedBuilder(
+                      animation: _expAnimation,
+                      builder: (context, child) {
+                        return Transform.translate(
+                          offset: Offset(
+                            0,
+                            sin(_expAnimation.value * 3 * 3.14) * 5,
+                          ),
+                          child: child,
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(30),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.star,
+                                  color: Colors.yellow,
+                                  size: 30,
+                                ),
+                                TweenAnimationBuilder<double>(
+                                  tween: Tween<double>(begin: 0.5, end: 1.5),
+                                  duration: const Duration(milliseconds: 700),
+                                  curve: Curves.elasticOut,
+                                  builder: (context, value, child) {
+                                    return Transform.scale(
+                                      scale: value,
+                                      child: Opacity(
+                                        opacity: 2 - value,
+                                        child: const Icon(
+                                          Icons.star,
+                                          color: Colors.white,
+                                          size: 30,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                            const SizedBox(width: 12),
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '경험치 획득!',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                Text(
+                                  '+${_userController.recentExp} EXP',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              )
+            : const SizedBox(),
+          ),
+          
+          // 축하 효과 (파티클 대신 별 아이콘으로 대체)
+          Obx(() => _userController.showExpNotification 
+            ? _buildCelebrationEffect()
+            : SizedBox.shrink()
+          ),
+          
+          // 퀴즈 결과 오버레이
+          _buildQuizResultOverlay(),
+        ],
       ),
+      extendBody: true,
       bottomNavigationBar: JellyfishNavigationBar(
         selectedIndex: 2, // 퀴즈 탭 선택
         onTabChanged: (index) {
@@ -267,8 +491,10 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
     );
   }
 
-  // 앱바 구현
+  // 앱바 구현 (사용자 경험치 정보 추가)
   Widget _buildAppBar() {
+    final userController = _userController;
+    
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Row(
@@ -289,24 +515,87 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
             ],
           ),
           Spacer(),
-          // 퀴즈 점수 표시
-          GlassContainer(
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            borderRadius: 12,
-            child: Row(
-              children: [
-                Icon(Icons.star, color: Colors.amber, size: 16),
-                SizedBox(width: 4),
-                Obx(() => Text(
-                  '${_totalScore.value}점',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+          
+          // 유저 레벨 및 경험치 표시
+          GestureDetector(
+            onTap: () => Get.toNamed(AppRoutes.profile),
+            child: Obx(() => GlassContainer(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              borderRadius: 12,
+              child: Row(
+                children: [
+                  // 레벨 뱃지
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.3),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.5),
+                        width: 2,
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${userController.user.level}',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
                   ),
-                )),
-              ],
-            ),
+                  SizedBox(width: 8),
+                  
+                  // 경험치 표시
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // 사용자 이름
+                      Text(
+                        userController.user.name,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      
+                      // 경험치 프로그레스 바
+                      SizedBox(height: 4),
+                      SizedBox(
+                        width: 80,
+                        child: Stack(
+                          children: [
+                            // 배경
+                            Container(
+                              height: 5,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(2.5),
+                              ),
+                            ),
+                            
+                            // 진행 상태
+                            Container(
+                              height: 5,
+                              width: 80 * userController.user.levelProgress,
+                              decoration: BoxDecoration(
+                                color: Colors.amber,
+                                borderRadius: BorderRadius.circular(2.5),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            )),
           ),
         ],
       ),
@@ -449,40 +738,28 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
     );
   }
 
-  // 완료한 퀴즈 탭
+  // 완료된 퀴즈 탭 빌드
   Widget _buildCompletedQuizTab() {
-    final completedQuizzes = _quizzes.where((q) => q.isCompleted).toList();
+    print('완료된 퀴즈 탭 빌드: ${_completedQuizzes.length}개');
     
-    if (completedQuizzes.isEmpty) {
-      return _buildEmptyState('아직 완료한 퀴즈가 없습니다.', Icons.check_circle_outline);
-    }
-    
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Text(
-            '완료한 퀴즈 ${completedQuizzes.length}개',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.white.withOpacity(0.9),
-            ),
-          ),
-        ),
-        Expanded(
-          child: ListView.builder(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            itemCount: completedQuizzes.length,
-            itemBuilder: (context, index) {
-              final quiz = completedQuizzes[index];
-              return _buildCompletedQuizItem(quiz);
-            },
-          ),
-        ),
-      ],
-    );
+    return Obx(() {
+      List<Quiz> completedQuizzes = _completedQuizzes.toList();
+      print('표시할 완료된 퀴즈 수: ${completedQuizzes.length}');
+      
+      if (completedQuizzes.isEmpty) {
+        return _buildEmptyState('아직 완료한 퀴즈가 없습니다.', Icons.check_circle_outline);
+      }
+      
+      return ListView.builder(
+        itemCount: completedQuizzes.length,
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        itemBuilder: (context, index) {
+          final quiz = completedQuizzes[index];
+          print('완료된 퀴즈 표시: ${quiz.id} - ${quiz.title}');
+          return _buildCompletedQuizItem(quiz);
+        },
+      );
+    });
   }
 
   // 퀴즈 카드 위젯
@@ -493,8 +770,30 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
     bool isCompleted = false,
     String? subtitle,
   }) {
+    // 카드 클릭 시 동작 정의
+    void onCardTap() {
+      bool isQuizCompleted = quiz.isCompleted || _completedQuizzes.any((q) => q.id == quiz.id);
+      
+      if (isLocked) {
+        // 잠긴 퀴즈는 정보만 표시
+        Get.snackbar(
+          '아직 풀 수 없는 퀴즈입니다',
+          '해당 퀴즈는 아직 풀 수 없습니다.',
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.grey.withOpacity(0.8),
+          colorText: Colors.white,
+        );
+      } else if (isQuizCompleted) {
+        // 완료된 퀴즈는 상세 정보 표시
+        _viewCompletedQuizInfo(quiz);
+      } else {
+        // 풀 수 있는 퀴즈는 시작
+        _startQuiz(quiz);
+      }
+    }
+
     return GestureDetector(
-      onTap: isLocked || isCompleted ? () => _viewCompletedQuizInfo(quiz) : () => _startQuiz(quiz),
+      onTap: onCardTap,
       child: GlassContainer(
         borderRadius: 20,
         child: Stack(
@@ -790,8 +1089,21 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
     );
   }
 
-  // 퀴즈 시작 함수
+  // 퀴즈 시작 함수 (개선된 UI)
   void _startQuiz(Quiz quiz) {
+    print('퀴즈 시작 시도: ${quiz.id} - ${quiz.title}');
+    
+    // 완료 여부 확인 (두 가지 방법으로 확인)
+    bool isQuizCompleted = quiz.isCompleted || _completedQuizzes.any((q) => q.id == quiz.id);
+    print('퀴즈 완료 여부: isCompleted=${quiz.isCompleted}, _completedQuizzes에 포함=${_completedQuizzes.any((q) => q.id == quiz.id)}');
+    
+    // 이미 완료된 퀴즈인 경우 상세 정보 표시
+    if (isQuizCompleted) {
+      print('완료된 퀴즈이므로 상세 정보 표시');
+      _viewCompletedQuizInfo(quiz);
+      return;
+    }
+    
     Get.bottomSheet(
       Container(
         decoration: BoxDecoration(
@@ -803,6 +1115,29 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // 퀴즈 유형 배지
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: quiz.type == QuizType.emergency
+                  ? Colors.redAccent.withOpacity(0.2)
+                  : Colors.blue.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              width: double.infinity,
+              alignment: Alignment.center,
+              child: Text(
+                quiz.type == QuizType.emergency ? '긴급 퀴즈' : '일일 퀴즈',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: quiz.type == QuizType.emergency ? Colors.redAccent : Colors.blue,
+                ),
+              ),
+            ),
+            SizedBox(height: 16),
+            
+            // 퀴즈 제목
             Text(
               quiz.title,
               style: TextStyle(
@@ -810,41 +1145,113 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
                 fontWeight: FontWeight.bold,
                 color: Colors.black87,
               ),
+              textAlign: TextAlign.center,
             ),
             SizedBox(height: 8),
+            
+            // 퀴즈 설명
             Text(
               quiz.description,
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.black54,
               ),
+              textAlign: TextAlign.center,
             ),
             SizedBox(height: 20),
-            Text(
-              quiz.question,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-                color: Colors.black87,
+            
+            // 문제
+            Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Text(
+                quiz.question,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                ),
               ),
             ),
             SizedBox(height: 20),
+            
+            // 보상 포인트 표시
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.star,
+                  color: Colors.amber,
+                  size: 20,
+                ),
+                SizedBox(width: 8),
+                Text(
+                  '정답 보상: ${quiz.type == QuizType.emergency ? 
+                      ExpConstants.EMERGENCY_QUIZ_CORRECT :
+                      ExpConstants.DAILY_QUIZ_CORRECT} EXP',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.amber[800],
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 20),
+            
+            // 선택지
             ...List.generate(
               quiz.options.length,
               (index) => Padding(
                 padding: EdgeInsets.only(bottom: 12),
                 child: ElevatedButton(
-                  onPressed: () => _answerQuiz(quiz, index),
+                  onPressed: () {
+                    Get.back();
+                    _showQuizResult.value = true;
+                    _currentQuiz.value = quiz;
+                    
+                    final String answer = quiz.options[index];
+                    final int answerIndex = quiz.options.indexOf(answer);
+                    _isCorrectAnswer.value = answerIndex == quiz.correctAnswer;
+                    
+                    // 정답 처리
+                    if (_isCorrectAnswer.value) {
+                      // 애니메이션 준비
+                      Future.delayed(Duration(milliseconds: 1800), () {
+                        _processQuizAnswer(quiz, answer);
+                      });
+                    } else {
+                      // 오답 처리
+                      Future.delayed(Duration(milliseconds: 1800), () {
+                        _showQuizResult.value = false;
+                        Get.snackbar(
+                          '오답입니다!',
+                          '다시 시도해보세요.',
+                          snackPosition: SnackPosition.TOP,
+                          backgroundColor: Colors.red.withOpacity(0.8),
+                          colorText: Colors.white,
+                          duration: const Duration(seconds: 2),
+                        );
+                      });
+                    }
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.grey[100],
                     foregroundColor: Colors.black87,
-                    padding: EdgeInsets.symmetric(vertical: 12),
+                    padding: EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                       side: BorderSide(color: Colors.grey[300]!),
                     ),
+                    elevation: 0,
                   ),
-                  child: Text(quiz.options[index]),
+                  child: Text(
+                    quiz.options[index],
+                    style: TextStyle(fontSize: 16),
+                  ),
                 ),
               ),
             ),
@@ -855,202 +1262,290 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
     );
   }
 
-  // 퀴즈 응답 처리 함수
-  void _answerQuiz(Quiz quiz, int selectedAnswer) {
-    bool isCorrect = selectedAnswer == quiz.correctAnswer;
+  /// 퀴즈 ID 문자열에서 유형을 포함한 고유 ID 생성
+  String _getUniqueQuizId(String idString) {
+    // 형식: 'daily-1', 'emergency-2' 등에서 유형과 번호를 추출하여 고유 ID 생성
+    final typeRegex = RegExp(r'^([a-z]+)-(\d+)$');
+    final match = typeRegex.firstMatch(idString);
     
-    Get.back(); // 퀴즈 시트 닫기
+    if (match != null && match.groupCount >= 2) {
+      final type = match.group(1); // 'daily' 또는 'emergency'
+      final number = match.group(2); // 숫자 부분
+      return '${type}_${number}'; // 예: 'daily_1', 'emergency_1'
+    }
     
-    // 답변 결과 표시
-    Get.bottomSheet(
-      Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    // 기본값 반환
+    return idString;
+  }
+
+  /// 퀴즈 답변 처리
+  void _processQuizAnswer(Quiz quiz, String answer) {
+    final uniqueId = _getUniqueQuizId(quiz.id);
+    print('퀴즈 답변 처리 시작: ${quiz.id} (고유ID: $uniqueId) - ${quiz.title} - 타입: ${quiz.type}');
+    
+    // 이미 완료된 퀴즈인 경우 처리하지 않음
+    if (_completedQuizzes.any((q) => q.id == quiz.id)) {
+      print('이미 완료된 퀴즈입니다: ${quiz.id}');
+      _showQuizResult.value = false;
+      return;
+    }
+    
+    // 정답 체크: answer 문자열이 어떤 인덱스의 옵션인지 확인
+    final int answerIndex = quiz.options.indexOf(answer);
+    if (answerIndex == -1) {
+      // 유효하지 않은 답변
+      Get.snackbar(
+        '오류',
+        '유효하지 않은 답변입니다.',
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: Colors.red.withOpacity(0.8),
+        colorText: Colors.white,
+      );
+      _showQuizResult.value = false;
+      return;
+    }
+    
+    final isCorrect = answerIndex == quiz.correctAnswer;
+    print('정답 여부: $isCorrect');
+    
+    if (isCorrect) {
+      try {
+        // 이전 레벨 저장
+        final prevLevel = _userController.user.level;
+        
+        // 고유 퀴즈 ID 문자열 생성
+        final uniqueQuizId = _getUniqueQuizId(quiz.id);
+        print('고유 퀴즈 ID: $uniqueQuizId');
+        
+        // 정답인 경우 포인트 추가 (퀴즈 타입에 따라 다른 함수 호출)
+        if (quiz.type == QuizType.emergency) {
+          print('긴급 퀴즈 경험치 추가: ${ExpConstants.EMERGENCY_QUIZ_CORRECT}');
+          _userController.addEmergencyQuizExp();
+        } else {
+          print('일일 퀴즈 경험치 추가: ${ExpConstants.DAILY_QUIZ_CORRECT}');
+          _userController.addDailyQuizExp();
+        }
+        
+        // 문자열 ID로만 완료 목록 업데이트 (숫자 ID는 더 이상 사용하지 않음)
+        _userController.addCompletedQuizString(uniqueQuizId);
+        print('사용자 완료 퀴즈 목록에 추가됨: $uniqueQuizId');
+        
+        // 업데이트 후 사용자 완료 퀴즈 목록 확인
+        _userController.getCompletedQuizStringsAsync().then((ids) {
+          print('현재 완료된 퀴즈 문자열 ID: $ids');
+        });
+        
+        // 정답 처리 및 UI 업데이트 - 인덱스 대신 ID로 찾기
+        final index = _quizzes.indexWhere((q) => q.id == quiz.id);
+        if (index != -1) {
+          // 완료된 퀴즈로 표시
+          final updatedQuiz = quiz.copyWith(isCompleted: true);
+          print('퀴즈 완료 상태 업데이트: ${updatedQuiz.id} - isCompleted: ${updatedQuiz.isCompleted}');
+          
+          // 퀴즈 목록 업데이트 (직접 인덱스로 접근)
+          _quizzes[index] = updatedQuiz;
+          
+          // 완료된 퀴즈 목록에 추가
+          if (!_completedQuizzes.any((q) => q.id == updatedQuiz.id)) {
+            _completedQuizzes.add(updatedQuiz);
+            print('완료된 퀴즈 목록에 추가됨: ${updatedQuiz.id}');
+          }
+          
+          // 목록 갱신 강제
+          _quizzes.refresh();
+          _completedQuizzes.refresh();
+          
+          print('완료된 퀴즈 수: ${_completedQuizzes.length}');
+          
+          // 결과 화면 숨기기 (지연 시간 늘림)
+          Future.delayed(Duration(milliseconds: 1000), () {
+            // 결과 창 먼저 닫기
+            _showQuizResult.value = false;
+            
+            // 잠시 대기 후 탭 전환 및 레벨업 처리
+            Future.delayed(Duration(milliseconds: 300), () {
+              // 완료된 퀴즈 탭으로 이동
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _tabController.animateTo(2);
+              });
+              
+              // 레벨업 체크 (추가 지연)
+              Future.delayed(Duration(milliseconds: 300), () {
+                if (_userController.user.level > prevLevel) {
+                  _showLevelUpDialog(prevLevel, _userController.user.level);
+                }
+              });
+            });
+          });
+        } else {
+          // 퀴즈를 찾지 못한 경우
+          print('퀴즈를 찾을 수 없음: ${quiz.id}');
+          Get.snackbar(
+            '오류',
+            '퀴즈 정보를 업데이트할 수 없습니다.',
+            snackPosition: SnackPosition.TOP,
+            backgroundColor: Colors.red.withOpacity(0.8),
+            colorText: Colors.white,
+          );
+          _showQuizResult.value = false;
+        }
+      } catch (e) {
+        // 에러 처리
+        print('퀴즈 처리 중 오류 발생: $e');
+        Get.snackbar(
+          '오류',
+          '퀴즈 처리 중 오류가 발생했습니다.',
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.red.withOpacity(0.8),
+          colorText: Colors.white,
+        );
+        _showQuizResult.value = false;
+      }
+    } else {
+      // 오답 처리
+      Future.delayed(Duration(milliseconds: 1800), () {
+        _showQuizResult.value = false;
+        Get.snackbar(
+          '오답입니다!',
+          '다시 시도해보세요.',
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.red.withOpacity(0.8),
+          colorText: Colors.white,
+          duration: const Duration(seconds: 2),
+        );
+      });
+    }
+  }
+  
+  // 레벨업 축하 다이얼로그
+  void _showLevelUpDialog(int prevLevel, int newLevel) {
+    // 애니메이션 컨트롤러 재설정 및 시작
+    _celebrationController.reset();
+    _celebrationController.forward();
+    
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
         ),
-        padding: EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // 결과 아이콘
-            Center(
-              child: Container(
-                width: 70,
-                height: 70,
-                decoration: BoxDecoration(
-                  color: isCorrect ? Colors.green[100] : Colors.red[100],
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  isCorrect ? Icons.check : Icons.close,
-                  color: isCorrect ? Colors.green : Colors.red,
-                  size: 40,
-                ),
+        child: Container(
+          padding: EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 10,
+                offset: Offset(0, 5),
               ),
-            ),
-            SizedBox(height: 20),
-            
-            // 결과 텍스트
-            Text(
-              isCorrect ? '정답입니다!' : '틀렸습니다!',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: isCorrect ? Colors.green : Colors.red,
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 레벨업 아이콘 애니메이션
+              TweenAnimationBuilder<double>(
+                duration: Duration(milliseconds: 1000),
+                tween: Tween<double>(begin: 0.0, end: 1.0),
+                curve: Curves.elasticOut,
+                builder: (context, value, child) {
+                  return Transform.scale(
+                    scale: value,
+                    child: Container(
+                      width: 150,
+                      height: 150,
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.arrow_upward,
+                              color: Colors.blue,
+                              size: 50,
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'LV. $newLevel',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 16),
-            
-            // 정답 표시
-            if (!isCorrect)
+              SizedBox(height: 16),
               Text(
-                '정답: ${quiz.options[quiz.correctAnswer]}',
+                '레벨 업!',
                 style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black87,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue,
                 ),
+              ),
+              SizedBox(height: 8),
+              RichText(
                 textAlign: TextAlign.center,
-              ),
-            SizedBox(height: 16),
-            
-            // 해설
-            Text(
-              '해설: ${quiz.explanation}',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.black87,
-              ),
-            ),
-            SizedBox(height: 24),
-            
-            // 획득 점수 표시 (정답일 경우에만)
-            if (isCorrect)
-              Container(
-                padding: EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.amber.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                text: TextSpan(
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.black87,
+                  ),
                   children: [
-                    Icon(Icons.star, color: Colors.amber[800], size: 20),
-                    SizedBox(width: 8),
-                    Text(
-                      '+${quiz.points} 점',
+                    TextSpan(text: '축하합니다! '),
+                    TextSpan(
+                      text: 'Lv.$prevLevel → Lv.$newLevel',
                       style: TextStyle(
-                        fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: Colors.amber[800],
                       ),
                     ),
+                    TextSpan(text: '로 레벨업 했습니다.'),
                   ],
                 ),
               ),
-            SizedBox(height: 24),
-            
-            // 확인 버튼
-            ElevatedButton(
-              onPressed: () {
-                Get.back();
-                
-                if (isCorrect) {
-                  // 인덱스를 찾아서 직접 퀴즈 객체를 업데이트
-                  int index = _quizzes.indexWhere((q) => q.id == quiz.id);
-                  if (index != -1) {
-                    // 수정된 방법: GetX의 반응형 상태 관리 활용
-                    // 1. 새로운 리스트 생성
-                    List<Quiz> updatedQuizzes = [..._quizzes];
-                    
-                    // 2. 새 퀴즈 객체로 교체
-                    updatedQuizzes[index] = Quiz(
-                      id: quiz.id,
-                      title: quiz.title,
-                      description: quiz.description,
-                      question: quiz.question,
-                      options: quiz.options,
-                      correctAnswer: quiz.correctAnswer,
-                      explanation: quiz.explanation,
-                      type: quiz.type,
-                      releaseDate: quiz.releaseDate,
-                      expiryDate: quiz.expiryDate,
-                      isCompleted: true,
-                      imagePath: quiz.imagePath,
-                      points: quiz.points,
-                    );
-                    
-                    // 3. 리스트 전체를 교체 (GetX에서 더 확실하게 감지됨)
-                    _quizzes.value = updatedQuizzes;
-                    
-                    // 4. 점수 추가
-                    _totalScore.value += quiz.points;
-                    
-                    // 5. 강제 업데이트 호출
-                    _quizzes.refresh();
-                    
-                    // 완료 후 완료된 퀴즈 탭으로 이동
-                    _tabController.animateTo(2); // 완료한 퀴즈 탭 인덱스(2)로 이동
-                    
-                    // 상태 디버깅
-                    print('완료된 퀴즈 수: ${_quizzes.where((q) => q.isCompleted).length}');
-                    print('퀴즈 ID: ${quiz.id}, isCompleted: true');
-                    print('업데이트된 퀴즈 리스트 길이: ${_quizzes.length}');
-                    print('총 점수: ${_totalScore.value}');
-                    
-                    // 성공 메시지 표시
-                    Get.snackbar(
-                      '완료',
-                      '퀴즈 완료! +${quiz.points}점을 획득했습니다.',
-                      snackPosition: SnackPosition.BOTTOM,
-                      backgroundColor: Colors.green.withOpacity(0.7),
-                      colorText: Colors.white,
-                      margin: EdgeInsets.all(16),
-                      duration: Duration(seconds: 2),
-                    );
-                  } else {
-                    Get.snackbar(
-                      '오류',
-                      '퀴즈를 찾을 수 없습니다.',
-                      snackPosition: SnackPosition.BOTTOM,
-                      backgroundColor: Colors.red.withOpacity(0.7),
-                      colorText: Colors.white,
-                      margin: EdgeInsets.all(16),
-                    );
-                  }
-                } else {
-                  // 오답일 경우 메시지만 표시
-                  Get.snackbar(
-                    '오답',
-                    '정답을 확인하고 다시 시도해보세요!',
-                    snackPosition: SnackPosition.BOTTOM,
-                    backgroundColor: Colors.orange.withOpacity(0.7),
-                    colorText: Colors.white,
-                    margin: EdgeInsets.all(16),
-                    duration: Duration(seconds: 2),
-                  );
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+              SizedBox(height: 12),
+              Text(
+                '새로운 칭호: ${ExpConstants.LEVEL_TITLES[newLevel] ?? "해파리 마스터"}',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue,
                 ),
               ),
-              child: Text('확인'),
-            ),
-          ],
+              SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () {
+                  Get.back();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ),
+                child: Text('확인'),
+              ),
+            ],
+          ),
         ),
       ),
-      isScrollControlled: true,
     );
   }
 
-  // 완료된 퀴즈 정보 보기
+  // 완료한 퀴즈 정보 보기
   void _viewCompletedQuizInfo(Quiz quiz) {
     Get.bottomSheet(
       Container(
@@ -1233,5 +1728,221 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
       ),
       isScrollControlled: true,
     );
+  }
+
+  // 퀴즈 결과 오버레이
+  Widget _buildQuizResultOverlay() {
+    return Obx(() => _showQuizResult.value
+      ? Container(
+          color: Colors.black.withOpacity(0.7),
+          width: double.infinity,
+          height: double.infinity,
+          child: Center(
+            child: TweenAnimationBuilder<double>(
+              duration: Duration(milliseconds: 500),
+              tween: Tween<double>(begin: 0.1, end: 1.0),
+              curve: Curves.elasticOut,
+              builder: (context, value, child) {
+                return Transform.scale(
+                  scale: value,
+                  child: child,
+                );
+              },
+              child: Container(
+                width: 280,
+                padding: EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 10,
+                      offset: Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // 결과 아이콘 (Lottie 애니메이션이 없을 경우 아이콘으로 대체)
+                    _isCorrectAnswer.value
+                      ? _buildResultIcon(true)
+                      : _buildResultIcon(false),
+                    SizedBox(height: 16),
+                    
+                    // 결과 메시지
+                    Text(
+                      _isCorrectAnswer.value ? '정답입니다!' : '오답입니다!',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: _isCorrectAnswer.value ? Colors.green : Colors.red,
+                      ),
+                    ),
+                    SizedBox(height: 12),
+                    
+                    // 정답 및 설명
+                    if (!_isCorrectAnswer.value) ...[
+                      Text(
+                        '정답: ${_currentQuiz.value.options[_currentQuiz.value.correctAnswer]}',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black87,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: 8),
+                    ],
+                    
+                    // 설명
+                    Text(
+                      _currentQuiz.value.explanation,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.black54,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 24),
+                    
+                    // 확인 버튼
+                    ElevatedButton(
+                      onPressed: () {
+                        _showQuizResult.value = false;
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _isCorrectAnswer.value ? Colors.green : Colors.blue,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                      ),
+                      child: Text('확인'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        )
+      : SizedBox.shrink(),
+    );
+  }
+
+  // 결과 아이콘 위젯 (Lottie 애니메이션 대신 사용)
+  Widget _buildResultIcon(bool isCorrect) {
+    return Container(
+      width: 120,
+      height: 120,
+      decoration: BoxDecoration(
+        color: isCorrect ? Colors.green.withOpacity(0.2) : Colors.red.withOpacity(0.2),
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: TweenAnimationBuilder<double>(
+          duration: Duration(milliseconds: 600),
+          tween: Tween<double>(begin: 0.0, end: 1.0),
+          curve: Curves.elasticOut,
+          builder: (context, value, child) {
+            return Transform.scale(
+              scale: value,
+              child: Icon(
+                isCorrect ? Icons.check_circle : Icons.cancel,
+                color: isCorrect ? Colors.green : Colors.red,
+                size: 80,
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  // 축하 효과 (파티클 대신 별 아이콘으로 대체)
+  Widget _buildCelebrationEffect() {
+    // 이미 애니메이션이 실행 중인지 확인
+    if (!_celebrationController.isAnimating) {
+      _celebrationController.reset();
+      _celebrationController.forward();
+    }
+    
+    return AnimatedBuilder(
+      animation: _celebrationController,
+      builder: (context, child) {
+        return Stack(
+          children: List.generate(20, (index) {
+            final random = Random();
+            final size = random.nextDouble() * 20 + 10;
+            final x = random.nextDouble() * MediaQuery.of(context).size.width;
+            final y = random.nextDouble() * MediaQuery.of(context).size.height * 0.6;
+            final progress = _celebrationController.value;
+            
+            return Positioned(
+              left: x,
+              top: y,
+              child: Opacity(
+                opacity: (1 - progress) * 0.8,
+                child: Transform.translate(
+                  offset: Offset(
+                    0, 
+                    progress * 100,
+                  ),
+                  child: Icon(
+                    Icons.star,
+                    size: size,
+                    color: Colors.primaries[index % Colors.primaries.length],
+                  ),
+                ),
+              ),
+            );
+          }),
+        );
+      },
+    );
+  }
+
+  /// 완료된 퀴즈 비동기 초기화
+  Future<void> _initCompletedQuizzesAsync() async {
+    try {
+      // 완료된 퀴즈 목록 비우기
+      _completedQuizzes.clear();
+      
+      // 퀴즈 완료 문자열 ID 목록 (새 방식 - 비동기 호출)
+      final completedStrings = await _userController.getCompletedQuizStringsAsync();
+      
+      print('초기화: 완료된 퀴즈 문자열 ID 목록: $completedStrings');
+      
+      // 각 퀴즈에 대해 완료 여부 확인
+      for (var i = 0; i < _quizzes.length; i++) {
+        final quiz = _quizzes[i];
+        final uniqueId = _getUniqueQuizId(quiz.id);
+        
+        // 사용자가 완료한 퀴즈인지 확인 (문자열 ID로)
+        if (completedStrings.contains(uniqueId)) {
+          print('완료된 퀴즈 찾음 (문자열 ID): ${quiz.id} (고유ID: $uniqueId) - 타입: ${quiz.type}');
+          
+          // 완료 상태로 퀴즈 업데이트
+          final updatedQuiz = quiz.copyWith(isCompleted: true);
+          _quizzes[i] = updatedQuiz;
+          
+          // 완료된 퀴즈 목록에 추가
+          _completedQuizzes.add(updatedQuiz);
+        }
+      }
+      
+      // UI 갱신
+      setState(() {
+        // 목록 갱신
+        _quizzes.refresh();
+        _completedQuizzes.refresh();
+      });
+      
+      print('초기화 완료 - 완료된 퀴즈 수: ${_completedQuizzes.length}');
+    } catch (e) {
+      print('완료된 퀴즈 초기화 중 오류 발생: $e');
+    }
   }
 } 
