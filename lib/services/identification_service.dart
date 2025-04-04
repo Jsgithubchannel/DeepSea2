@@ -142,6 +142,13 @@ class IdentificationService {
         }
       }
 
+      print("--- Full Probabilities ---");
+      labeledProbabilities.forEach((key, value) {
+        print("$key: ${value.toStringAsFixed(4)}");
+      });
+      print("--------------------------");
+      // --- 디버깅 끝 ---
+
       // 확률 순으로 정렬 (가장 높은 확률이 먼저 오도록)
       var sortedEntries =
           labeledProbabilities.entries.toList()
@@ -209,13 +216,13 @@ class IdentificationService {
             // getPixel은 Pixel 객체를 반환할 수 있음
             var pixel = resizedImage.getPixel(x, y);
             // Pixel 객체의 r, g, b 속성 사용
-            buffer[pixelIndex++] = pixel.r / 255.0; // 0~1 정규화 예시
-            buffer[pixelIndex++] = pixel.g / 255.0;
-            buffer[pixelIndex++] = pixel.b / 255.0;
+            buffer[pixelIndex++] = pixel.r.toDouble(); // 0~255 범위의 float 값
+            buffer[pixelIndex++] = pixel.g.toDouble();
+            buffer[pixelIndex++] = pixel.b.toDouble();
           }
         }
         print(
-          'Image processed as Float32 (0-1 range). Buffer size: ${buffer.length}',
+          'Image processed as Float32 (0-255 range). Buffer size: ${buffer.length}',
         );
         return buffer.buffer.asUint8List();
       } else if (inputType == TensorType.uint8) {

@@ -22,11 +22,11 @@ class _IdentificationScreenState extends State<IdentificationScreen>
 
   // 샘플 이미지 경로 목록
   final List<String> _sampleImages = [
-    'assets/images/jellyfish/jellyfish_1.png',
-    'assets/images/jellyfish/jellyfish_2.png',
-    'assets/images/jellyfish/jellyfish_3.png',
-    'assets/images/jellyfish/jellyfish_4.png',
-    'assets/images/jellyfish/jellyfish_5.png',
+    'assets/images/jellyfish/compass_jellyfish.png',
+    'assets/images/jellyfish/lions_mane_jellyfish.png',
+    'assets/images/jellyfish/moon_jellyfish.png',
+    'assets/images/jellyfish/moon_jellyfish2.png',
+    'assets/images/jellyfish/box_jellyfish.png',
   ];
 
   // 현재 선택된 이미지
@@ -481,7 +481,7 @@ class _IdentificationScreenState extends State<IdentificationScreen>
         final confidence = result.values.first; // 가장 높은 확률 값
 
         print(
-          'Identification successful: ID=$jellyfishId, Confidence=$confidence',
+          ">>> Debug: Navigating to ResultScreen with ID: $jellyfishId, Confidence: $confidence",
         );
 
         // 결과 화면으로 이동

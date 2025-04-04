@@ -12,7 +12,7 @@ class IdentificationResultScreen extends StatefulWidget {
   final String jellyfishId;
   final String imagePath;
   final double confidenceScore;
-  
+
   const IdentificationResultScreen({
     Key? key,
     required this.jellyfishId,
@@ -21,32 +21,35 @@ class IdentificationResultScreen extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _IdentificationResultScreenState createState() => _IdentificationResultScreenState();
+  _IdentificationResultScreenState createState() =>
+      _IdentificationResultScreenState();
 }
 
-class _IdentificationResultScreenState extends State<IdentificationResultScreen> with SingleTickerProviderStateMixin {
-  final JellyfishController _jellyfishController = Get.find<JellyfishController>();
+class _IdentificationResultScreenState extends State<IdentificationResultScreen>
+    with SingleTickerProviderStateMixin {
+  final JellyfishController _jellyfishController =
+      Get.find<JellyfishController>();
   final UserController _userController = Get.find<UserController>();
-  
+
   late Jellyfish _jellyfish;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _slideAnimation;
-  
+
   bool _isLoading = true;
   int _gainedExp = 0;
   bool _isNewDiscovery = false;
-  
+
   @override
   void initState() {
     super.initState();
-    
+
     // 애니메이션 컨트롤러 초기화
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
-    
+
     // 페이드 애니메이션
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
@@ -54,7 +57,7 @@ class _IdentificationResultScreenState extends State<IdentificationResultScreen>
         curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
       ),
     );
-    
+
     // 슬라이드 애니메이션
     _slideAnimation = Tween<double>(begin: 50.0, end: 0.0).animate(
       CurvedAnimation(
@@ -62,62 +65,103 @@ class _IdentificationResultScreenState extends State<IdentificationResultScreen>
         curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
       ),
     );
-    
+
     // 데이터 로드
     _loadJellyfishData();
   }
-  
+
   @override
   void dispose() {
     _animationController.dispose();
     super.dispose();
   }
-  
+
   /// 해파리 데이터 로드
   Future<void> _loadJellyfishData() async {
+    // 로딩 시작 (선택적: initState에서 이미 true)
+    // if (mounted) setState(() { _isLoading = true; });
+
+    print(">>> Debug: ResultScreen received ID: ${widget.jellyfishId}");
+
     try {
-      // 해파리 데이터 가져오기
-      _jellyfish = _jellyfishController.getJellyfishById(widget.jellyfishId)!;
-      
-      // 발견 처리
-      if (!_jellyfish.isDiscovered) {
-        _isNewDiscovery = true;
-        _gainedExp = 50; // 새로운 발견은 50 경험치
-        
-        // 해파리 발견 처리
-        await _jellyfishController.discoverJellyfish(widget.jellyfishId);
-        
-        // 사용자 발견 카운트 증가
-        await _userController.incrementDiscoveredJellyfish();
+      final foundJellyfish = _jellyfishController.getJellyfishById(
+        widget.jellyfishId,
+      );
+
+      // 해파리 데이터를 찾지 못한 경우 처리
+      if (foundJellyfish == null) {
+        print('Error: Jellyfish data not found for ID: ${widget.jellyfishId}');
+        if (mounted)
+          setState(() {
+            _isLoading = false;
+          }); // 로딩 상태 해제
+        Get.snackbar(
+          '데이터 오류',
+          '해당 ID(${widget.jellyfishId})의 해파리 정보를 찾을 수 없습니다.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.orange.withOpacity(0.8),
+          colorText: Colors.white,
+        );
+        return; // 함수 종료
       } else {
-        _gainedExp = 10; // 이미 발견한 해파리는 10 경험치
+        print(
+          ">>> Debug: Jellyfish FOUND - ID: ${foundJellyfish.id}, Name: ${foundJellyfish.name}",
+        );
+        // 해파리 데이터 할당
+        _jellyfish = foundJellyfish;
       }
-      
-      // 경험치 추가
-      await _userController.addExp(_gainedExp);
-      
-      setState(() {
-        _isLoading = false;
-      });
-      
-      // 애니메이션 시작
-      _animationController.forward();
+
+      // 발견 상태 확인
+      _isNewDiscovery = !_jellyfish.isDiscovered;
+
+      if (_isNewDiscovery) {
+        print('New discovery! Processing...');
+        // 1. 해파리 발견 처리
+        await _jellyfishController.discoverJellyfish(widget.jellyfishId);
+        // 2. 사용자 발견 카운트 증가 및 관련 경험치 추가 (UserController 내부에서 처리)
+        //    addExp는 incrementDiscoveredJellyfish 내부에서 호출되므로 여기서 직접 호출 X
+        await _userController.incrementDiscoveredJellyfish();
+        // _gainedExp = ExpConstants.JELLYFISH_DISCOVER; // 필요하다면 UI 표시용으로 값만 저장
+        _gainedExp = 300; // ExpConstants 사용 권장
+      } else {
+        print('Already discovered. Processing...');
+        // 이미 발견한 해파리를 다시 식별했을 때 경험치 (선택 사항)
+        _gainedExp = 10; // ExpConstants 사용 권장
+        // 이미 발견된 경우, 빌드 후 약간의 경험치 추가 예약
+        if (_gainedExp > 0 && mounted) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              print('Adding EXP for re-discovery after build: $_gainedExp');
+              _userController.addExp(_gainedExp); // 적은 경험치 추가
+            }
+          });
+        }
+      }
+
+      // UI 상태 업데이트 및 애니메이션 시작
+      if (mounted) {
+        setState(() {
+          _isLoading = false; // 로딩 상태 해제
+        });
+      }
+      _animationController.forward(); // 애니메이션 시작
     } catch (e) {
       print('데이터 로드 오류: $e');
-      setState(() {
-        _isLoading = false;
-      });
-      
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
       Get.snackbar(
         '오류',
-        '데이터를 불러오는 중 오류가 발생했습니다.',
+        '데이터 처리 중 오류가 발생했습니다: $e',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red.withOpacity(0.8),
         colorText: Colors.white,
       );
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
     // 로딩 상태
@@ -128,10 +172,7 @@ class _IdentificationResultScreenState extends State<IdentificationResultScreen>
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                AppTheme.azureStart,
-                AppTheme.azureEnd,
-              ],
+              colors: [AppTheme.azureStart, AppTheme.azureEnd],
             ),
           ),
           child: Center(
@@ -161,7 +202,7 @@ class _IdentificationResultScreenState extends State<IdentificationResultScreen>
         ),
       );
     }
-    
+
     return Scaffold(
       body: Container(
         width: double.infinity,
@@ -170,10 +211,7 @@ class _IdentificationResultScreenState extends State<IdentificationResultScreen>
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              AppTheme.azureStart,
-              AppTheme.azureEnd,
-            ],
+            colors: [AppTheme.azureStart, AppTheme.azureEnd],
           ),
         ),
         child: SafeArea(
@@ -222,7 +260,7 @@ class _IdentificationResultScreenState extends State<IdentificationResultScreen>
       ),
     );
   }
-  
+
   // 앱바 구성
   Widget _buildAppBar() {
     return Padding(
@@ -247,7 +285,7 @@ class _IdentificationResultScreenState extends State<IdentificationResultScreen>
       ),
     );
   }
-  
+
   // 이미지 섹션
   Widget _buildImageSection() {
     return Stack(
@@ -268,26 +306,29 @@ class _IdentificationResultScreenState extends State<IdentificationResultScreen>
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(24),
-            child: widget.imagePath.startsWith('http')
-              ? Image.network(
-                  widget.imagePath,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    color: Colors.grey[300],
-                    child: Icon(Icons.image_not_supported, size: 50),
-                  ),
-                )
-              : Image.asset(
-                  widget.imagePath,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    color: Colors.grey[300],
-                    child: Icon(Icons.image_not_supported, size: 50),
-                  ),
-                ),
+            child:
+                widget.imagePath.startsWith('http')
+                    ? Image.network(
+                      widget.imagePath,
+                      fit: BoxFit.cover,
+                      errorBuilder:
+                          (context, error, stackTrace) => Container(
+                            color: Colors.grey[300],
+                            child: Icon(Icons.image_not_supported, size: 50),
+                          ),
+                    )
+                    : Image.asset(
+                      widget.imagePath,
+                      fit: BoxFit.cover,
+                      errorBuilder:
+                          (context, error, stackTrace) => Container(
+                            color: Colors.grey[300],
+                            child: Icon(Icons.image_not_supported, size: 50),
+                          ),
+                    ),
           ),
         ),
-        
+
         // 신뢰도 배지
         Positioned(
           top: 16,
@@ -318,7 +359,7 @@ class _IdentificationResultScreenState extends State<IdentificationResultScreen>
             ),
           ),
         ),
-        
+
         // 새 발견 배지
         if (_isNewDiscovery)
           Positioned(
@@ -336,7 +377,11 @@ class _IdentificationResultScreenState extends State<IdentificationResultScreen>
               ),
               child: Row(
                 children: [
-                  Icon(Icons.new_releases_outlined, color: Colors.white, size: 14),
+                  Icon(
+                    Icons.new_releases_outlined,
+                    color: Colors.white,
+                    size: 14,
+                  ),
                   SizedBox(width: 4),
                   Text(
                     '새 발견!',
@@ -350,7 +395,7 @@ class _IdentificationResultScreenState extends State<IdentificationResultScreen>
               ),
             ),
           ),
-          
+
         // 위험도 배지
         Positioned(
           bottom: 16,
@@ -367,7 +412,11 @@ class _IdentificationResultScreenState extends State<IdentificationResultScreen>
             ),
             child: Row(
               children: [
-                Icon(Icons.warning_amber_rounded, color: Colors.white, size: 14),
+                Icon(
+                  Icons.warning_amber_rounded,
+                  color: Colors.white,
+                  size: 14,
+                ),
                 SizedBox(width: 4),
                 Text(
                   _getDangerLevelText(_jellyfish.dangerLevel),
@@ -384,7 +433,7 @@ class _IdentificationResultScreenState extends State<IdentificationResultScreen>
       ],
     );
   }
-  
+
   // 결과 섹션
   Widget _buildResultSection() {
     return GlassContainer(
@@ -431,7 +480,7 @@ class _IdentificationResultScreenState extends State<IdentificationResultScreen>
               height: 1.5,
             ),
           ),
-          if (_jellyfish.funFact.isNotEmpty) 
+          if (_jellyfish.funFact.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 12.0),
               child: Container(
@@ -443,7 +492,11 @@ class _IdentificationResultScreenState extends State<IdentificationResultScreen>
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.lightbulb_outline, color: Colors.amber, size: 18),
+                    Icon(
+                      Icons.lightbulb_outline,
+                      color: Colors.amber,
+                      size: 18,
+                    ),
                     SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -463,7 +516,7 @@ class _IdentificationResultScreenState extends State<IdentificationResultScreen>
       ),
     );
   }
-  
+
   // 경험치 표시
   Widget _buildExpGained() {
     return Container(
@@ -471,10 +524,7 @@ class _IdentificationResultScreenState extends State<IdentificationResultScreen>
       decoration: BoxDecoration(
         color: Colors.blue.withOpacity(0.3),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.blue.withOpacity(0.5),
-          width: 1,
-        ),
+        border: Border.all(color: Colors.blue.withOpacity(0.5), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -493,7 +543,7 @@ class _IdentificationResultScreenState extends State<IdentificationResultScreen>
       ),
     );
   }
-  
+
   // 액션 버튼
   Widget _buildActionButtons() {
     return Column(
@@ -542,7 +592,7 @@ class _IdentificationResultScreenState extends State<IdentificationResultScreen>
       ],
     );
   }
-  
+
   // 액션 버튼 위젯
   Widget _buildActionButton({
     required IconData icon,
@@ -559,10 +609,7 @@ class _IdentificationResultScreenState extends State<IdentificationResultScreen>
         decoration: BoxDecoration(
           color: color.withOpacity(0.2),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: color.withOpacity(0.3),
-            width: 1,
-          ),
+          border: Border.all(color: color.withOpacity(0.3), width: 1),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -586,7 +633,7 @@ class _IdentificationResultScreenState extends State<IdentificationResultScreen>
       ),
     );
   }
-  
+
   // 위험 섹션
   Widget _buildDangerSection() {
     return GlassContainer(
@@ -597,7 +644,11 @@ class _IdentificationResultScreenState extends State<IdentificationResultScreen>
         children: [
           Row(
             children: [
-              Icon(Icons.warning_amber_rounded, color: _jellyfish.dangerColor, size: 20),
+              Icon(
+                Icons.warning_amber_rounded,
+                color: _jellyfish.dangerColor,
+                size: 20,
+              ),
               SizedBox(width: 8),
               Text(
                 '위험 정보',
@@ -625,11 +676,11 @@ class _IdentificationResultScreenState extends State<IdentificationResultScreen>
       ),
     );
   }
-  
+
   // 위험도 표시기
   Widget _buildDangerLevelIndicator({required DangerLevel level}) {
     final int levelIndex = level.index;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -641,9 +692,10 @@ class _IdentificationResultScreenState extends State<IdentificationResultScreen>
                 height: 8,
                 margin: EdgeInsets.symmetric(horizontal: 2),
                 decoration: BoxDecoration(
-                  color: isActive
-                      ? _getDangerColor(DangerLevel.values[index])
-                      : Colors.white.withOpacity(0.2),
+                  color:
+                      isActive
+                          ? _getDangerColor(DangerLevel.values[index])
+                          : Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -673,11 +725,11 @@ class _IdentificationResultScreenState extends State<IdentificationResultScreen>
       ],
     );
   }
-  
+
   // 위험 설명
   Widget _buildDangerDescription(DangerLevel level) {
     String description;
-    
+
     switch (level) {
       case DangerLevel.safe:
         description = '이 해파리는 사람에게 해를 끼치지 않으며, 접촉해도 안전합니다.';
@@ -689,13 +741,14 @@ class _IdentificationResultScreenState extends State<IdentificationResultScreen>
         description = '쏘이면 통증과 발진을 유발할 수 있으며, 의료적 처치가 필요할 수 있습니다.';
         break;
       case DangerLevel.severe:
-        description = '강한 통증, 심한 발진, 알레르기 반응 등 심각한 증상을 유발할 수 있습니다. 즉시 의료 조치가 필요합니다.';
+        description =
+            '강한 통증, 심한 발진, 알레르기 반응 등 심각한 증상을 유발할 수 있습니다. 즉시 의료 조치가 필요합니다.';
         break;
       case DangerLevel.deadly:
         description = '극도로 위험하며, 생명을 위협할 수 있습니다. 접촉 시 즉시 응급 처치와 의료 조치가 필요합니다.';
         break;
     }
-    
+
     return Container(
       padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -719,7 +772,7 @@ class _IdentificationResultScreenState extends State<IdentificationResultScreen>
       ),
     );
   }
-  
+
   // 추가 정보
   Widget _buildAdditionalInfo() {
     return Column(
@@ -765,7 +818,7 @@ class _IdentificationResultScreenState extends State<IdentificationResultScreen>
       ],
     );
   }
-  
+
   // 정보 카드
   Widget _buildInfoCard({
     required IconData icon,
@@ -815,7 +868,7 @@ class _IdentificationResultScreenState extends State<IdentificationResultScreen>
       ),
     );
   }
-  
+
   // 위치 제보하기
   void _reportLocation() {
     Get.toNamed(
@@ -827,7 +880,7 @@ class _IdentificationResultScreenState extends State<IdentificationResultScreen>
       },
     );
   }
-  
+
   // 잘못된 식별 제보하기
   void _reportMisidentification() {
     Get.toNamed(
@@ -839,18 +892,15 @@ class _IdentificationResultScreenState extends State<IdentificationResultScreen>
       },
     );
   }
-  
+
   // 쏘임 신고하기
   void _reportSting() {
     Get.toNamed(
       AppRoutes.jellyfishStingReport,
-      arguments: {
-        'jellyfishId': _jellyfish.id,
-        'imagePath': widget.imagePath,
-      },
+      arguments: {'jellyfishId': _jellyfish.id, 'imagePath': widget.imagePath},
     );
   }
-  
+
   // 위험 수준 텍스트
   String _getDangerLevelText(DangerLevel level) {
     switch (level) {
@@ -866,7 +916,7 @@ class _IdentificationResultScreenState extends State<IdentificationResultScreen>
         return '치명적';
     }
   }
-  
+
   // 위험 색상
   Color _getDangerColor(DangerLevel level) {
     switch (level) {
@@ -882,7 +932,7 @@ class _IdentificationResultScreenState extends State<IdentificationResultScreen>
         return Colors.red;
     }
   }
-  
+
   // 위험 배경색
   Color _getDangerBackgroundColor(DangerLevel level) {
     switch (level) {
@@ -898,4 +948,4 @@ class _IdentificationResultScreenState extends State<IdentificationResultScreen>
         return Colors.red.withOpacity(0.2);
     }
   }
-} 
+}
