@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:jellyfish_test/services/identification_service.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:jellyfish_test/core/controllers/jellyfish_controller.dart';
 import 'package:jellyfish_test/core/controllers/quiz_controller.dart';
@@ -38,6 +39,26 @@ void main() async {
       print('Hive 어댑터 등록 오류: $e');
       // 어댑터 중복 오류는 무시해도 앱 실행에 문제가 없음
     }
+    // --- Hive 초기화 끝 ---
+
+    // --- IdentificationService 초기화 및 등록 추가 ---
+    print('IdentificationService 초기화 시작...');
+    final identificationService = IdentificationService();
+    // 앱 시작 시 모델 로드를 시도합니다. (백그라운드에서 진행될 수 있음)
+    // 여기서 await를 사용하면 로딩 시간이 길어질 수 있으므로,
+    // identification_screen에서 사용하기 전에 isModelLoaded를 확인하는 것이 좋습니다.
+    // 여기서는 비동기 로드를 시작만 합니다.
+    identificationService
+        .loadModel()
+        .then((_) {
+          print("IdentificationService.loadModel() completed in background.");
+        })
+        .catchError((e) {
+          print("Background model loading failed: $e");
+        });
+    Get.put(identificationService, permanent: true); // GetX에 등록 (앱 전체에서 사용 가능)
+    print('IdentificationService 등록 완료!');
+    // --- 추가 끝 ---
 
     // 기존 컨트롤러 정리 후 재등록 (중복 인스턴스 방지)
     if (Get.isRegistered<UserController>()) {
