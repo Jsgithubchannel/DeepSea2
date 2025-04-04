@@ -78,11 +78,6 @@ class _IdentificationResultScreenState extends State<IdentificationResultScreen>
 
   /// 해파리 데이터 로드
   Future<void> _loadJellyfishData() async {
-    // 로딩 시작 (선택적: initState에서 이미 true)
-    // if (mounted) setState(() { _isLoading = true; });
-
-    print(">>> Debug: ResultScreen received ID: ${widget.jellyfishId}");
-
     try {
       final foundJellyfish = _jellyfishController.getJellyfishById(
         widget.jellyfishId,

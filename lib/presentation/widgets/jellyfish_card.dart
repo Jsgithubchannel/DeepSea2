@@ -45,17 +45,6 @@ class JellyfishCard extends StatelessWidget {
                           // Image.asset을 Column으로 감싸서 print 넣기 쉽게 함 (선택사항)
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            // ================== 디버깅 코드 시작 ==================
-                            Builder(
-                              builder: (context) {
-                                // 여기서 print 또는 breakpoint 설정
-                                print(
-                                  'JellyfishCard - Loading image for ${jellyfish.name} (ID: ${jellyfish.id}): ${jellyfish.imageUrl}',
-                                );
-                                return const SizedBox.shrink(); // print만 하므로 빈 위젯 반환
-                              },
-                            ),
-                            // ================== 디버깅 코드 끝 ====================
                             Expanded(
                               // 이미지가 Expanded를 차지하도록 다시 감싸기
                               child: Image.asset(

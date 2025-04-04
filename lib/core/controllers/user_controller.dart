@@ -162,7 +162,6 @@ class UserController extends GetxController {
       // User.toJson에 uid, email 포함 필요
       final userData = jsonEncode(_user.value.toJson());
       await prefs.setString(key, userData);
-      print("User data saved for key: $key");
     } catch (e) {
       print('사용자 데이터 저장 중 오류 발생: $e');
     }
@@ -199,7 +198,7 @@ class UserController extends GetxController {
       // _handleAuthStateChanged 리스너가 자동으로 호출되어 데이터 처리
       // 여기서 별도로 _user 상태를 직접 업데이트할 필요는 없음
 
-      print('Google 로그인 성공: ${loggedInUser?.uid}');
+      print('Google 로그인 성공');
       // 로딩 상태는 _handleAuthStateChanged 에서 최종적으로 false 처리됨
       return loggedInUser;
     } on fb_auth.FirebaseAuthException catch (e) {

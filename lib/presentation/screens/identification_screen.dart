@@ -468,8 +468,6 @@ class _IdentificationScreenState extends State<IdentificationScreen>
     _isIdentifying.value = true; // 로딩 시작
 
     try {
-      print('Starting identification for: $_selectedImage');
-      // IdentificationService를 사용하여 추론 실행
       final result = await _identificationService.identifyJellyfish(
         _selectedImage!,
       );
@@ -480,11 +478,6 @@ class _IdentificationScreenState extends State<IdentificationScreen>
         // 결과가 성공적으로 반환된 경우
         final jellyfishId = result.keys.first; // 가장 확률 높은 ID
         final confidence = result.values.first; // 가장 높은 확률 값
-
-        print(
-          ">>> Debug: Navigating to ResultScreen with ID: $jellyfishId, Confidence: $confidence",
-        );
-
         // 결과 화면으로 이동
         Get.toNamed(
           AppRoutes.identificationResult,

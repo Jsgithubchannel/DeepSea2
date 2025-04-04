@@ -28,6 +28,7 @@ class IdentificationService {
         FirebaseModelDownloadConditions(),
       );
       final modelFile = customModel.file;
+      print("Firebase 모델 다운로드 시도: $_modelName");
       print('Model downloaded to: ${modelFile.path}');
 
       // 2. tflite 인터프리터 로드
@@ -178,8 +179,6 @@ class IdentificationService {
       return null;
     }
     try {
-      print("Loading asset: $imagePath");
-
       // 1. rootBundle을 사용하여 에셋 로드
       final ByteData data = await rootBundle.load(imagePath);
       // 2. ByteData를 Uint8List로 변환

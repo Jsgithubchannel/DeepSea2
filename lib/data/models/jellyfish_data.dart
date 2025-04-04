@@ -6,9 +6,8 @@ import 'package:jellyfish_test/data/models/jellyfish_model.dart';
 class JellyfishData {
   /// 해파리 목록
   static final List<Jellyfish> jellyfishList = [
-    // --- labels.txt 순서 기반 ---
     Jellyfish(
-      id: 'jf001', // 1. compass_jellyfish
+      id: 'compass_jellyfish', // 1. compass_jellyfish
       name: '나침반해파리',
       scientificName: 'Chrysaora hysoscella',
       description:
@@ -23,7 +22,7 @@ class JellyfishData {
       isDiscovered: false,
     ),
     Jellyfish(
-      id: 'jf002', // 2. lions_mane_jellyfish
+      id: 'lions_mane_jellyfish', // 2. lions_mane_jellyfish
       name: '라이온스메인해파리',
       scientificName: 'Cyanea capillata',
       description:
@@ -40,7 +39,7 @@ class JellyfishData {
       isDiscovered: false,
     ),
     Jellyfish(
-      id: 'jf003', // 3. blue_jellyfish
+      id: 'blue_jellyfish', // 3. blue_jellyfish
       name: '푸른해파리',
       scientificName: 'Cyanea lamarckii',
       description:
@@ -55,7 +54,7 @@ class JellyfishData {
       isDiscovered: false,
     ),
     Jellyfish(
-      id: 'jf004', // 4. Moon_jellyfish
+      id: 'Moon_jellyfish', // 4. Moon_jellyfish
       name: '문어해파리',
       scientificName: 'Aurelia aurita',
       description:
@@ -74,7 +73,7 @@ class JellyfishData {
       discoveredAt: DateTime.now().subtract(const Duration(days: 30)),
     ),
     Jellyfish(
-      id: 'jf005', // 5. mauve_stinger_jellyfish
+      id: 'mauve_stinger_jellyfish', // 5. mauve_stinger_jellyfish
       name: '보라해파리',
       scientificName: 'Pelagia noctiluca',
       description:
@@ -90,7 +89,7 @@ class JellyfishData {
       isDiscovered: false,
     ),
     Jellyfish(
-      id: 'jf006', // 6. barrel_jellyfish
+      id: 'barrel_jellyfish', // 6. barrel_jellyfish
       name: '통해파리',
       scientificName: 'Rhizostoma pulmo',
       description:
