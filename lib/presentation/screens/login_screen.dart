@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jellyfish_test/app/app_routes.dart';
 import 'package:jellyfish_test/core/controllers/user_controller.dart';
+
 import 'package:jellyfish_test/core/theme/app_theme.dart';
 import 'package:jellyfish_test/core/theme/glass_container.dart';
 import 'dart:ui';
@@ -15,7 +16,8 @@ class LoginScreen extends StatefulWidget {
   _LoginScreenState createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin {
+class _LoginScreenState extends State<LoginScreen>
+    with TickerProviderStateMixin {
   // 로고 애니메이션 컨트롤러
   late final AnimationController _logoAnimationController;
   late final Animation<double> _logoScaleAnimation;
@@ -32,15 +34,19 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   late final Animation<double> _logoEntryAnimation;
   late final Animation<double> _formEntryAnimation;
   
+
   // 로그인 중 상태
   final RxBool _isLoggingIn = false.obs;
-  
+
+  // AuthService 인스턴스 추가
+  final AuthService _authService = AuthService();
+
   // 사용자 컨트롤러
   final UserController _userController = Get.find<UserController>();
-  
+
   // 사용자 이름 컨트롤러
   final TextEditingController _nameController = TextEditingController();
-  
+
   // 이름 입력 오류
   final RxString _nameError = ''.obs;
   
@@ -72,7 +78,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       duration: const Duration(seconds: 3),
       vsync: this,
     )..repeat(reverse: true);
-    
+
     _logoScaleAnimation = Tween<double>(begin: 0.95, end: 1.05).animate(
       CurvedAnimation(
         parent: _logoAnimationController,
@@ -271,6 +277,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                                         offset: Offset(0, 2),
                                       ),
                                     ],
+
                                   ),
                                   textAlign: TextAlign.center,
                                 ),
@@ -435,7 +442,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       ),
     );
   }
-  
+
   // 이름 입력 필드
   Widget _buildNameInputField(bool isSmallScreen) {
     return Column(
@@ -592,22 +599,22 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       ),
     );
   }
-  
+
   // 이름 검증
   bool _validateName() {
     if (_nameController.text.trim().isEmpty) {
       _nameError.value = '이름을 입력해주세요';
       return false;
     }
-    
+
     if (_nameController.text.trim().length < 2) {
       _nameError.value = '이름은 최소 2자 이상이어야 합니다';
       return false;
     }
-    
+
     return true;
   }
-  
+
   // 사용자 이름 업데이트 및 로그인 진행
   Future<void> _processLogin() async {
     if (!_validateName()) {
@@ -627,7 +634,6 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       _isLoggingIn.value = false;
       return;
     }
-    
     try {
       await _userController.updateUsername(_nameController.text.trim());
       await _userController.updateLastLoginDate();
@@ -648,18 +654,49 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
 
   // 구글 로그인 처리
   void _handleGoogleLogin() async {
-    _isLoggingIn.value = true;
-    
-    // 실제 구현에서는 구글 로그인 API 호출
-    Future.delayed(const Duration(seconds: 1), () async {
-      await _processLogin();
-    });
+    _isLoggingIn.value = true; // 로딩 시작
+    try {
+      // AuthService를 통해 Google 로그인 시도
+      UserCredential? userCredential = await _authService.signInWithGoogle();
+
+      if (userCredential != null) {
+        // 로그인 성공!
+        print(
+          "Google 로그인 및 Firebase 인증 성공: ${userCredential.user?.displayName}",
+        );
+
+        // 중요: AuthWrapper가 로그인 상태 변화를 감지하고 자동으로
+        // HomePage 등으로 화면을 전환해주므로, 여기서 별도의 화면 전환 코드는
+        // 필요 없을 수 있습니다. (AuthWrapper를 사용하고 있다는 가정 하에)
+      } else {
+        // 로그인 실패 또는 사용자가 취소
+        Get.snackbar(
+          '로그인 실패',
+          'Google 로그인을 취소했거나 오류가 발생했습니다.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.redAccent,
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      // 예외 처리
+      print("Google 로그인 중 예외 발생: $e");
+      Get.snackbar(
+        '로그인 오류',
+        '로그인 처리 중 문제가 발생했습니다. 다시 시도해주세요.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+    } finally {
+      _isLoggingIn.value = false; // 로딩 종료 (성공/실패/예외 모두)
+    }
   }
 
   // 카카오 로그인 처리
   void _handleKakaoLogin() async {
     _isLoggingIn.value = true;
-    
+
     // 실제 구현에서는 카카오 로그인 API 호출
     Future.delayed(const Duration(seconds: 1), () async {
       await _processLogin();
@@ -669,7 +706,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   // 네이버 로그인 처리
   void _handleNaverLogin() async {
     _isLoggingIn.value = true;
-    
+
     // 실제 구현에서는 네이버 로그인 API 호출
     Future.delayed(const Duration(seconds: 1), () async {
       await _processLogin();
@@ -693,7 +730,6 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     Get.offAllNamed(AppRoutes.home);
   }
 }
-
 /// 배경 물결 애니메이션을 위한 커스텀 페인터
 class WavePainter extends CustomPainter {
   final double animationValue;

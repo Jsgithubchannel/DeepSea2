@@ -29,22 +29,17 @@ class HomePage extends StatelessWidget {
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [
-                      AppTheme.twilightStart,
-                      AppTheme.twilightEnd,
-                    ],
+                    colors: [AppTheme.twilightStart, AppTheme.twilightEnd],
                   ),
                 ),
               ),
-              
+
               // 배경 물방울 효과
               _buildBubbleBackground(),
-              
+
               // 메인 콘텐츠
-              SafeArea(
-                child: _buildContent(controller),
-              ),
-              
+              SafeArea(child: _buildContent(controller)),
+
               // 알림 이벤트
               Obx(() {
                 if (controller.isAlertVisible.value) {
@@ -75,7 +70,7 @@ class HomePage extends StatelessWidget {
       },
     );
   }
-  
+
   /// 메인 컨텐츠 빌드
   Widget _buildContent(HomeController controller) {
     return Obx(() {
@@ -94,7 +89,7 @@ class HomePage extends StatelessWidget {
       }
     });
   }
-  
+
   /// 홈 탭 콘텐츠
   Widget _buildHomeTab(HomeController controller) {
     return SingleChildScrollView(
@@ -104,37 +99,41 @@ class HomePage extends StatelessWidget {
         children: [
           // 사용자 프로필 헤더
           Obx(() => ProfileHeader(user: controller.user.value)),
-          
+
           const SizedBox(height: 16),
-          
+
           // 레벨 진행도 카드
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Obx(() => LevelProgressCard(user: controller.user.value)),
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // 해파리 컬렉션 진행도
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Obx(() => CollectionProgressCard(jellyfishList: controller.jellyfishList)),
+            child: Obx(
+              () => CollectionProgressCard(
+                jellyfishList: controller.jellyfishList,
+              ),
+            ),
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // 팁 및 가이드 섹션
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: _buildTipsSection(),
           ),
-          
+
           const SizedBox(height: 24),
         ],
       ),
     );
   }
-  
+
   /// 컬렉션 탭 콘텐츠
   Widget _buildCollectionTab(HomeController controller) {
     return const Center(
@@ -148,7 +147,7 @@ class HomePage extends StatelessWidget {
       ),
     );
   }
-  
+
   /// 퀴즈 탭 콘텐츠
   Widget _buildQuizTab(HomeController controller) {
     return const Center(
@@ -162,7 +161,7 @@ class HomePage extends StatelessWidget {
       ),
     );
   }
-  
+
   /// 프로필 탭 콘텐츠
   Widget _buildProfileTab(HomeController controller) {
     return const Center(
@@ -176,7 +175,7 @@ class HomePage extends StatelessWidget {
       ),
     );
   }
-  
+
   /// 팁 및 가이드 섹션
   Widget _buildTipsSection() {
     return PrimaryGlassCard(
@@ -209,25 +208,21 @@ class HomePage extends StatelessWidget {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           const Text(
             '• 해파리를 발견했을 경우 절대 만지지 마세요.\n'
             '• 해변에서 수영할 때는 해파리 경보를 확인하세요.\n'
             '• 해파리에 쏘였을 경우, 즉시 식초를 사용하세요.\n'
             '• 심각한 증상이 나타나면 즉시 의료 도움을 요청하세요.',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.white,
-              height: 1.5,
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.white, height: 1.5),
           ),
         ],
       ),
     );
   }
-  
+
   /// 배경 버블 효과
   Widget _buildBubbleBackground() {
     return Stack(
@@ -235,7 +230,7 @@ class HomePage extends StatelessWidget {
         final size = 10.0 + (index % 4 * 20);
         final xPos = (index * 20) % (Get.width - size);
         final yPos = (index * 50) % (Get.height - size);
-        
+
         return Positioned(
           left: xPos,
           top: yPos,
@@ -251,4 +246,4 @@ class HomePage extends StatelessWidget {
       }),
     );
   }
-} 
+}

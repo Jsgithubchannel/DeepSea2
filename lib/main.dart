@@ -7,13 +7,16 @@ import 'package:jellyfish_test/core/controllers/user_controller.dart';
 import 'package:jellyfish_test/data/models/jellyfish_model.dart';
 import 'package:jellyfish_test/core/theme/app_theme.dart';
 import 'package:jellyfish_test/app/app_routes.dart';
+import 'presentation/screens/auth_wrapper.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart'; // flutterfire configure로 생성된 파일
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   try {
     print('앱 초기화 중...');
-    
+
     // Hive 초기화
     await Hive.initFlutter();
     
@@ -60,9 +63,9 @@ void main() async {
     print('UserController 상태: ${userController.hashCode}');
     print('JellyfishController 상태: ${jellyfishController.hashCode}');
     print('QuizController 상태: ${quizController.hashCode}');
-    
+
     print('앱 초기화 완료!');
-    
+
     runApp(const MyApp());
   } catch (e) {
     print('앱 초기화 중 오류 발생: $e');
@@ -126,6 +129,7 @@ class MyApp extends StatelessWidget {
       ),
       initialRoute: AppRoutes.initial,
       getPages: AppRoutes.routes,
+      home: AuthWrapper(),
     );
   }
 }
