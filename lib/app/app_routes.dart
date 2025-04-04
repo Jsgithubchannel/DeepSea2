@@ -8,6 +8,10 @@ import 'package:jellyfish_test/presentation/screens/onboarding_screen.dart';
 import 'package:jellyfish_test/presentation/screens/permission_screen.dart';
 import 'package:jellyfish_test/presentation/screens/profile_screen.dart';
 import 'package:jellyfish_test/presentation/screens/quiz_screen.dart';
+import 'package:jellyfish_test/presentation/screens/identification_result_screen.dart';
+import 'package:jellyfish_test/presentation/screens/jellyfish_report_screen.dart';
+import 'package:jellyfish_test/presentation/screens/jellyfish_sting_report_screen.dart';
+import 'package:jellyfish_test/presentation/screens/identification_screen.dart';
 
 /// 앱 라우트 정의
 class AppRoutes {
@@ -19,9 +23,12 @@ class AppRoutes {
   static const home = '/home';
   static const collection = '/collection';
   static const identification = '/identification';
+  static const identificationResult = '/identification_result';
   static const quiz = '/quiz';
   static const profile = '/profile';
   static const jellyfishDetail = '/jellyfish_detail';
+  static const jellyfishReport = '/jellyfish_report';
+  static const jellyfishStingReport = '/jellyfish_sting_report';
   
   // 라우트 설정
   static final routes = [
@@ -57,7 +64,16 @@ class AppRoutes {
     ),
     GetPage(
       name: identification,
-      page: () => const _PlaceholderPage(title: '해파리 식별 화면'),
+      page: () => const IdentificationScreen(),
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: identificationResult,
+      page: () => IdentificationResultScreen(
+        jellyfishId: Get.arguments?['jellyfishId'] ?? '',
+        imagePath: Get.arguments?['imagePath'] ?? '',
+        confidenceScore: Get.arguments?['confidenceScore'] ?? 0.9,
+      ),
       transition: Transition.fadeIn,
     ),
     GetPage(
@@ -76,6 +92,18 @@ class AppRoutes {
         jellyfishId: Get.arguments?['jellyfishId'] ?? '',
       ),
       transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: jellyfishReport,
+      page: () => JellyfishReportScreen(),
+      transition: Transition.rightToLeftWithFade,
+      transitionDuration: const Duration(milliseconds: 350),
+    ),
+    GetPage(
+      name: jellyfishStingReport,
+      page: () => JellyfishStingReportScreen(),
+      transition: Transition.rightToLeftWithFade,
+      transitionDuration: const Duration(milliseconds: 350),
     ),
   ];
 

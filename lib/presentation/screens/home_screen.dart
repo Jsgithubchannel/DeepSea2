@@ -9,11 +9,13 @@ import 'package:jellyfish_test/data/models/jellyfish_model.dart';
 import 'package:jellyfish_test/presentation/widgets/jellyfish_card.dart';
 import 'package:jellyfish_test/presentation/widgets/shimmer_loading.dart';
 import 'package:jellyfish_test/presentation/widgets/navigation_bar.dart';
+import 'package:jellyfish_test/core/controllers/quiz_controller.dart';
 
 /// 홈 화면
 class HomeScreen extends StatelessWidget {
   final JellyfishController _jellyfishController = Get.find<JellyfishController>();
   final UserController _userController = Get.find<UserController>();
+  final QuizController _quizController = Get.find<QuizController>();
   
   // 임시 이벤트 데이터
   final RxBool _hasEvent = true.obs;
@@ -25,25 +27,9 @@ class HomeScreen extends StatelessWidget {
     print('HomeScreen 빌드 중...');
     return Obx(() {
       // 로딩 상태 확인
-      if (_jellyfishController.isLoading.value || _userController.isLoading.value) {
-        return Scaffold(
-          body: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  AppTheme.azureStart,
-                  AppTheme.azureEnd,
-                ],
-              ),
-            ),
-            child: const Center(
-              child: CircularProgressIndicator(
-                color: Colors.white,
-              ),
-            ),
-          ),
+      if (_jellyfishController.isLoading || _userController.isLoading) {
+        return const Center(
+          child: CircularProgressIndicator(),
         );
       }
       
@@ -164,7 +150,7 @@ class HomeScreen extends StatelessWidget {
   /// 프로필 섹션
   Widget _buildProfileSection(BuildContext context) {
     return Obx(() {
-      final user = _userController.user.value;
+      final user = _userController.user;
       
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -350,7 +336,7 @@ class HomeScreen extends StatelessWidget {
   /// 경험치 바
   Widget _buildXpProgressBar(BuildContext context) {
     return Obx(() {
-      final user = _userController.user.value;
+      final user = _userController.user;
       final xpPercentage = user.levelProgress * 100;
       
       return Padding(
@@ -445,112 +431,220 @@ class HomeScreen extends StatelessWidget {
   
   /// 돌발 이벤트 배너
   Widget _buildEventBanner(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: GestureDetector(
-        onTap: () {
-          // 이벤트 처리 로직
-          Get.toNamed(AppRoutes.quiz);
-        },
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-              colors: [
-                Colors.red.shade900.withOpacity(0.8),
-                Colors.deepOrange.shade900.withOpacity(0.8),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.red.withOpacity(0.3),
-                blurRadius: 10,
-                spreadRadius: 0,
+    return GetBuilder<QuizController>(
+      builder: (quizController) {
+        // 활성화된 돌발 퀴즈가 있는지 확인
+        final hasEmergencyQuiz = quizController.hasActiveEmergencyQuiz();
+        
+        // 돌발 퀴즈가 없으면 일반 이벤트 배너 표시
+        if (!hasEmergencyQuiz) {
+          return GlassContainer(
+            borderRadius: 16,
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.amber.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.verified,
+                      color: Colors.amber,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '해파리 감식반 이벤트 중!',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          '해파리를 발견하고 경험치를 얻으세요',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.white70,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.arrow_forward_ios,
+                      color: Colors.white70,
+                      size: 14,
+                    ),
+                    onPressed: () {
+                      Get.toNamed(AppRoutes.collection);
+                    },
+                    constraints: const BoxConstraints(
+                      minWidth: 30,
+                      minHeight: 30,
+                    ),
+                    padding: EdgeInsets.zero,
+                  ),
+                ],
               ),
-            ],
-          ),
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              // 경고 아이콘
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: Colors.red.shade800,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Center(
-                  child: Icon(
+            ),
+          );
+        }
+        
+        // 돌발 퀴즈가 있는 경우 빨간색 긴급 배너 표시
+        return GestureDetector(
+          onTap: () {
+            Get.toNamed(AppRoutes.quiz);
+          },
+          child: AlertGlassCard(
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                // 경고 아이콘
+                Container(
+                  width: 36,
+                  height: 36, 
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
                     Icons.warning_amber_rounded,
                     color: Colors.white,
-                    size: 28,
-                    shadows: [
-                      Shadow(
-                        color: Colors.black.withOpacity(0.3),
-                        blurRadius: 4,
-                      )
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 1,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Text(
+                              '긴급',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          const Text(
+                            '해파리 속보',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        '해파리 쏘임 응급처치법을 확인하세요!',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.white,
+                        ),
+                      ),
                     ],
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              // 이벤트 내용
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    const Text(
-                      '돌발 이벤트: 쏘였다 속보!',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                    // 남은 시간
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.timer,
+                            color: Colors.white,
+                            size: 12,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            quizController.formatTimeRemainingHumanReadable(),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '전문가의 응급처치법을 맞춰보세요',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.white.withOpacity(0.9),
+                    const SizedBox(height: 6),
+                    // 바로가기 버튼
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: const Text(
+                        '퀴즈 풀기',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ),
-              // 타이머
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.red.shade800.withOpacity(0.6),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: Colors.red.shade700.withOpacity(0.3),
-                  ),
-                ),
-                child: const Text(
-                  '19:23',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
   
   /// 발견 진행도 위젯
   Widget _buildDiscoveryProgress(BuildContext context) {
     return Obx(() {
-      final discoveryRate = _jellyfishController.discoveryRate.value;
+      final discoveryRate = _jellyfishController.discoveryRate;
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: GlassContainer(

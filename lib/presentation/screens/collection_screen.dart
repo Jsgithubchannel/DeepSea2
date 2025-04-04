@@ -82,6 +82,7 @@ class _CollectionScreenState extends State<CollectionScreen> with TickerProvider
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
+        height: double.infinity,
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
@@ -117,6 +118,7 @@ class _CollectionScreenState extends State<CollectionScreen> with TickerProvider
           ),
         ),
       ),
+      extendBody: true,
       bottomNavigationBar: JellyfishNavigationBar(
         selectedIndex: 1, // 도감 탭 선택
         onTabChanged: (index) {

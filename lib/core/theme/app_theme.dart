@@ -17,6 +17,10 @@ class AppTheme {
   static const azureStart = Color(0xFF1A2980);
   static const azureEnd = Color(0xFF26D0CE);
   
+  // 위험 그라데이션 색상
+  static const dangerStart = Color(0xFFE74C3C);
+  static const dangerEnd = Color(0xFF7B241C);
+  
   // 텍스트 색상
   static const textPrimary = Color(0xFF333333);
   static const textSecondary = Color(0xFF666666);
