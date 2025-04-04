@@ -17,11 +17,13 @@ class UserAdapter extends TypeAdapter<User> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return User(
-      id: fields[0] as String,
+      uid: fields[0] as String?,
       name: fields[1] as String,
+      email: fields[10] as String?,
       exp: fields[2] as int,
       level: fields[3] as int,
       discoveredJellyfishCount: fields[4] as int,
+      reportedJellyfishCount: fields[9] as int,
       badgeCount: fields[5] as int,
       completedQuizIds: (fields[6] as List).cast<int>(),
       lastLoginDate: fields[7] as DateTime?,
@@ -32,9 +34,9 @@ class UserAdapter extends TypeAdapter<User> {
   @override
   void write(BinaryWriter writer, User obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(11)
       ..writeByte(0)
-      ..write(obj.id)
+      ..write(obj.uid)
       ..writeByte(1)
       ..write(obj.name)
       ..writeByte(2)
@@ -50,7 +52,11 @@ class UserAdapter extends TypeAdapter<User> {
       ..writeByte(7)
       ..write(obj.lastLoginDate)
       ..writeByte(8)
-      ..write(obj.createdAt);
+      ..write(obj.createdAt)
+      ..writeByte(9)
+      ..write(obj.reportedJellyfishCount)
+      ..writeByte(10)
+      ..write(obj.email);
   }
 
   @override

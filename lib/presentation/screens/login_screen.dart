@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jellyfish_test/app/app_routes.dart';
 import 'package:jellyfish_test/core/controllers/user_controller.dart';
-import 'package:jellyfish_test/services/auth_service.dart';
 import 'package:jellyfish_test/core/theme/app_theme.dart';
 import 'package:jellyfish_test/core/theme/glass_container.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:ui';
 import 'dart:math' as math;
+import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 
 /// 로그인 화면
 class LoginScreen extends StatefulWidget {
@@ -37,9 +36,6 @@ class _LoginScreenState extends State<LoginScreen>
 
   // 로그인 중 상태
   final RxBool _isLoggingIn = false.obs;
-
-  // AuthService 인스턴스 추가
-  final AuthService _authService = AuthService();
 
   // 사용자 컨트롤러
   final UserController _userController = Get.find<UserController>();
@@ -325,28 +321,6 @@ class _LoginScreenState extends State<LoginScreen>
                                     delay: 0,
                                   ),
                                   SizedBox(height: 12),
-
-                                  _buildSocialLoginButton(
-                                    icon: Icons.chat_bubble,
-                                    text: '카카오로 계속하기',
-                                    color: const Color(0xFFFEE500),
-                                    textColor: Colors.black87,
-                                    onTap: _handleKakaoLogin,
-                                    isLoading: _isLoggingIn,
-                                    delay: 0.1,
-                                  ),
-                                  SizedBox(height: 12),
-
-                                  _buildSocialLoginButton(
-                                    icon: Icons.north_east,
-                                    text: '네이버로 계속하기',
-                                    color: const Color(0xFF03C75A),
-                                    textColor: Colors.white,
-                                    onTap: _handleNaverLogin,
-                                    isLoading: _isLoggingIn,
-                                    delay: 0.2,
-                                  ),
-                                  SizedBox(height: 20),
 
                                   // 이용약관 동의
                                   Obx(
@@ -641,6 +615,7 @@ class _LoginScreenState extends State<LoginScreen>
       _isLoggingIn.value = false;
       return;
     }
+
     try {
       await _userController.updateUsername(_nameController.text.trim());
       await _userController.updateLastLoginDate();
@@ -661,64 +636,74 @@ class _LoginScreenState extends State<LoginScreen>
 
   // 구글 로그인 처리
   void _handleGoogleLogin() async {
-    _isLoggingIn.value = true; // 로딩 시작
+    // 1. 약관 동의 먼저 확인
+    if (!_agreedToTerms.value) {
+      Get.snackbar(
+        '약관 동의 필요',
+        'Google 로그인을 진행하기 전에 약관에 동의해주세요.',
+        backgroundColor: Colors.orange.withOpacity(0.8),
+        colorText: Colors.white,
+        margin: EdgeInsets.all(16),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return; // 약관 미동의 시 중단
+    }
+
+    // 2. 로딩 상태 시작
+    _isLoggingIn.value = true;
+
     try {
-      // AuthService를 통해 Google 로그인 시도
-      UserCredential? userCredential = await _authService.signInWithGoogle();
+      // 3. UserController를 통해 Google 로그인 시도
+      final fb_auth.User? firebaseUser =
+          await _userController.signInWithGoogle();
 
-      if (userCredential != null) {
-        // 로그인 성공!
-        print(
-          "Google 로그인 및 Firebase 인증 성공: ${userCredential.user?.displayName}",
-        );
+      // 4. 로그인 성공 여부 확인
+      if (firebaseUser != null) {
+        // Google 로그인 성공
+        print('LoginScreen: Google 로그인 성공 확인됨 - UID: ${firebaseUser.uid}');
 
-        // 중요: AuthWrapper가 로그인 상태 변화를 감지하고 자동으로
-        // HomePage 등으로 화면을 전환해주므로, 여기서 별도의 화면 전환 코드는
-        // 필요 없을 수 있습니다. (AuthWrapper를 사용하고 있다는 가정 하에)
+        // UserController의 _handleAuthStateChanged가 비동기적으로 실행되어
+        // _user 상태를 업데이트했을 것입니다.
+        // initState의 'ever' 리스너가 _nameController를 업데이트 했을 수 있습니다.
+        // 잠시 기다려 상태 반영 시간을 줄 수 있습니다 (선택적).
+        // await Future.delayed(Duration(milliseconds: 100));
+
+        // 5. 최종 로그인 처리 (이름 검증, 데이터 업데이트, 화면 전환)
+        // _processLogin은 내부적으로 _nameController의 값을 사용하고,
+        // 약관 동의를 다시 확인하며, 사용자 이름/로그인 날짜 업데이트 후 화면 전환.
+        await _processLogin();
       } else {
-        // 로그인 실패 또는 사용자가 취소
-        Get.snackbar(
-          '로그인 실패',
-          'Google 로그인을 취소했거나 오류가 발생했습니다.',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.redAccent,
-          colorText: Colors.white,
-        );
+        // Google 로그인 실패 또는 취소됨
+        // UserController 내부 또는 _handleAuthStateChanged에서
+        // 이미 사용자에게 Snackbar 등으로 알렸을 수 있습니다.
+        print('LoginScreen: Google 로그인 실패 또는 취소됨.');
+        // 여기서 추가적인 실패 메시지를 표시할 수도 있습니다.
+        // Get.snackbar('로그인 실패', 'Google 계정으로 로그인하지 못했습니다.', snackPosition: SnackPosition.BOTTOM);
       }
     } catch (e) {
-      // 예외 처리
-      print("Google 로그인 중 예외 발생: $e");
+      // 예기치 못한 에러 처리 (signInWithGoogle 내부에서 처리되지 않은 경우)
+      print('LoginScreen: _handleGoogleLogin 에러: $e');
       Get.snackbar(
-        '로그인 오류',
-        '로그인 처리 중 문제가 발생했습니다. 다시 시도해주세요.',
+        '오류',
+        '로그인 중 예기치 않은 문제가 발생했습니다.',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.redAccent,
-        colorText: Colors.white,
       );
     } finally {
-      _isLoggingIn.value = false; // 로딩 종료 (성공/실패/예외 모두)
+      // 6. 로딩 상태 종료 (성공/실패/오류 여부와 관계없이)
+      // _processLogin 성공 시 화면 전환이 일어나므로,
+      // 실패/취소/오류 시에만 false로 설정되도록 할 수도 있습니다.
+      // 하지만 일반적으로는 항상 종료하는 것이 안전합니다.
+      if (mounted) {
+        // 위젯이 여전히 마운트 상태인지 확인
+        _isLoggingIn.value = false;
+      }
     }
   }
 
-  // 카카오 로그인 처리
-  void _handleKakaoLogin() async {
-    _isLoggingIn.value = true;
-
-    // 실제 구현에서는 카카오 로그인 API 호출
-    Future.delayed(const Duration(seconds: 1), () async {
-      await _processLogin();
-    });
-  }
-
-  // 네이버 로그인 처리
-  void _handleNaverLogin() async {
-    _isLoggingIn.value = true;
-
-    // 실제 구현에서는 네이버 로그인 API 호출
-    Future.delayed(const Duration(seconds: 1), () async {
-      await _processLogin();
-    });
-  }
+  // _processLogin 함수는 이름 검증, 약관 재확인,
+  // _userController.updateUsername, _userController.updateLastLoginDate 호출,
+  // 화면 전환(_navigateToPermission)을 수행합니다.
+  // Google 로그인 시 이름이 자동으로 채워졌더라도 _validateName()을 통과해야 합니다.
 
   // 권한 화면으로 이동
   void _navigateToPermission() {

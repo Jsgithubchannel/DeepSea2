@@ -120,10 +120,10 @@ class UserRepository extends GetxService {
     User currentUser = _user.value; // Get current custom user
 
     // 신규 사용자인지 확인 (ID가 기본값과 같은지 비교 등)
-    bool isNewUser = currentUser.id == User.defaultUser().id;
+    bool isNewUser = currentUser.uid == User.defaultUser().uid;
 
     User updatedUser = currentUser.copyWith(
-      id: firebaseUser.uid, // Firebase UID 사용
+      uid: firebaseUser.uid, // Firebase UID 사용
       name:
           firebaseUser.displayName ??
           currentUser.name ??

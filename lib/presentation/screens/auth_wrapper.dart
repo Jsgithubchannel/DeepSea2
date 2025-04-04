@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:jellyfish_test/presentation/screens/home_screen.dart';
+import 'package:jellyfish_test/presentation/screens/permission_screen.dart';
 
 // 필요한 위젯 및 서비스 import (경로 확인!)
 import '../../services/auth_service.dart'; // 상대 경로 예시
@@ -29,7 +30,7 @@ class AuthWrapper extends StatelessWidget {
         // 상태 2: 스트림에 데이터가 있음 (User 객체가 null 아님 -> 로그인 됨)
         else if (snapshot.hasData) {
           // HomePage에 user 파라미터를 전달하지 않고 그냥 생성
-          return HomeScreen();
+          return PermissionScreen();
         }
         // 상태 3: 스트림에 데이터가 없음 (User 객체가 null -> 로그아웃 됨)
         else {
