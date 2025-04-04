@@ -8,10 +8,8 @@ import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 
 /// 홈 화면 컨트롤러
 class HomeController extends GetxController {
-  // 의존성 주입
-  final UserRepository _userRepository = Get.find<UserRepository>();
-  final JellyfishRepository _jellyfishRepository =
-      Get.find<JellyfishRepository>();
+  late final UserRepository _userRepository;
+  late final JellyfishRepository _jellyfishRepository;
 
   // 사용자 정보
   Rx<User> get user => _userRepository.user;
@@ -30,19 +28,20 @@ class HomeController extends GetxController {
 
   @override
   void onInit() {
-    super.onInit();
+    // --- 수정: super.onInit() 다음에 Get.find() 호출 ---
+    super.onInit(); // super.onInit()을 먼저 호출하는 것이 일반적입니다.
+    _userRepository = Get.find<UserRepository>();
+    _jellyfishRepository = Get.find<JellyfishRepository>();
+    // --- 수정 완료 ---
 
-    // 초기 완성도 설정
+    // 이제 _userRepository와 _jellyfishRepository를 사용 가능
     discoveryRate.value = _jellyfishRepository.getDiscoveryRate();
-
-    // 도감 완성도 변화 감지
     ever(_jellyfishRepository.jellyfishList, (_) {
       discoveryRate.value = _jellyfishRepository.getDiscoveryRate();
     });
 
-    // 랜덤 확률로 돌발 이벤트 표시 (25%)
     _checkRandomAlert();
-    _listenToAuthState(); // 앱 시작 시 인증 상태 리스닝 시작
+    _listenToAuthState();
   }
 
   void _listenToAuthState() {

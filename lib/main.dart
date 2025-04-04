@@ -17,15 +17,20 @@ void main() async {
   try {
     print('앱 초기화 중...');
 
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    print('Firebase 초기화 완료!');
+
     // Hive 초기화
     await Hive.initFlutter();
-    
+
     // 모델 어댑터 등록 - 중복 등록 방지를 위한 예외 처리 추가
     try {
       if (!Hive.isAdapterRegistered(0)) {
         Hive.registerAdapter(DangerLevelAdapter());
       }
-      
+
       if (!Hive.isAdapterRegistered(1)) {
         Hive.registerAdapter(JellyfishAdapter());
       }
@@ -33,32 +38,32 @@ void main() async {
       print('Hive 어댑터 등록 오류: $e');
       // 어댑터 중복 오류는 무시해도 앱 실행에 문제가 없음
     }
-    
+
     // 기존 컨트롤러 정리 후 재등록 (중복 인스턴스 방지)
     if (Get.isRegistered<UserController>()) {
       Get.delete<UserController>();
     }
-    
+
     if (Get.isRegistered<JellyfishController>()) {
       Get.delete<JellyfishController>();
     }
-    
+
     if (Get.isRegistered<QuizController>()) {
       Get.delete<QuizController>();
     }
-    
+
     // 컨트롤러 등록 - 영구적(permanent) 옵션 추가
     final userController = Get.put(UserController(), permanent: true);
-    
+
     // 사용자 컨트롤러가 초기화될 때까지 대기
     await Future.delayed(Duration(milliseconds: 500));
-    
+
     // 해파리 컨트롤러는 사용자 컨트롤러가 초기화된 후에 등록
     final jellyfishController = Get.put(JellyfishController(), permanent: true);
-    
+
     // 퀴즈 컨트롤러 등록
     final quizController = Get.put(QuizController(), permanent: true);
-    
+
     // 컨트롤러 초기화 확인
     print('UserController 상태: ${userController.hashCode}');
     print('JellyfishController 상태: ${jellyfishController.hashCode}');
@@ -71,7 +76,7 @@ void main() async {
     print('앱 초기화 중 오류 발생: $e');
     // 오류 정보 자세히 출력
     print('오류 세부 정보: ${e.toString()}');
-    
+
     // 에러 화면을 표시
     runApp(const ErrorApp());
   }
@@ -117,14 +122,8 @@ class MyApp extends StatelessWidget {
             fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
-          bodyLarge: TextStyle(
-            fontSize: 16,
-            color: Colors.black87,
-          ),
-          bodyMedium: TextStyle(
-            fontSize: 14,
-            color: Colors.black54,
-          ),
+          bodyLarge: TextStyle(fontSize: 16, color: Colors.black87),
+          bodyMedium: TextStyle(fontSize: 14, color: Colors.black54),
         ),
       ),
       initialRoute: AppRoutes.initial,
@@ -155,10 +154,7 @@ class ErrorApp extends StatelessWidget {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 8),
-              Text(
-                '앱을 다시 시작해주세요.',
-                style: TextStyle(fontSize: 16),
-              ),
+              Text('앱을 다시 시작해주세요.', style: TextStyle(fontSize: 16)),
             ],
           ),
         ),

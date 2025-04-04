@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jellyfish_test/app/app_routes.dart';
 import 'package:jellyfish_test/core/controllers/user_controller.dart';
-
+import 'package:jellyfish_test/services/auth_service.dart';
 import 'package:jellyfish_test/core/theme/app_theme.dart';
 import 'package:jellyfish_test/core/theme/glass_container.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:ui';
 import 'dart:math' as math;
 
@@ -21,19 +22,18 @@ class _LoginScreenState extends State<LoginScreen>
   // 로고 애니메이션 컨트롤러
   late final AnimationController _logoAnimationController;
   late final Animation<double> _logoScaleAnimation;
-  
+
   // 물결 애니메이션 컨트롤러
   late final AnimationController _waveAnimationController;
-  
+
   // 버튼 애니메이션 컨트롤러
   late final AnimationController _buttonsAnimationController;
   late final Animation<double> _buttonsAnimation;
-  
+
   // 입장 애니메이션 컨트롤러
   late final AnimationController _entryAnimationController;
   late final Animation<double> _logoEntryAnimation;
   late final Animation<double> _formEntryAnimation;
-  
 
   // 로그인 중 상태
   final RxBool _isLoggingIn = false.obs;
@@ -49,30 +49,30 @@ class _LoginScreenState extends State<LoginScreen>
 
   // 이름 입력 오류
   final RxString _nameError = ''.obs;
-  
+
   // 약관 동의 상태
   final RxBool _agreedToTerms = true.obs;
 
   @override
   void initState() {
     super.initState();
-    
+
     // 입장 애니메이션 설정
     _entryAnimationController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
-    
+
     _logoEntryAnimation = CurvedAnimation(
       parent: _entryAnimationController,
       curve: Interval(0.0, 0.6, curve: Curves.easeOutCubic),
     );
-    
+
     _formEntryAnimation = CurvedAnimation(
       parent: _entryAnimationController,
       curve: Interval(0.3, 1.0, curve: Curves.easeOutCubic),
     );
-    
+
     // 로고 애니메이션 설정
     _logoAnimationController = AnimationController(
       duration: const Duration(seconds: 3),
@@ -85,27 +85,27 @@ class _LoginScreenState extends State<LoginScreen>
         curve: Curves.easeInOut,
       ),
     );
-    
+
     // 물결 애니메이션 설정
     _waveAnimationController = AnimationController(
       duration: const Duration(seconds: 10),
       vsync: this,
     )..repeat();
-    
+
     // 버튼 애니메이션 설정
     _buttonsAnimationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    
+
     _buttonsAnimation = CurvedAnimation(
       parent: _buttonsAnimationController,
       curve: Curves.easeInOut,
     );
-    
+
     // 기존 사용자 이름이 있으면 설정
     _nameController.text = _userController.user.name;
-    
+
     // 애니메이션 시작
     _entryAnimationController.forward();
     _buttonsAnimationController.forward();
@@ -126,7 +126,7 @@ class _LoginScreenState extends State<LoginScreen>
     // 화면 크기 가져오기
     final size = MediaQuery.of(context).size;
     final isSmallScreen = size.height < 700;
-    
+
     return Scaffold(
       body: Container(
         width: double.infinity,
@@ -135,10 +135,7 @@ class _LoginScreenState extends State<LoginScreen>
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              AppTheme.azureStart,
-              AppTheme.azureEnd,
-            ],
+            colors: [AppTheme.azureStart, AppTheme.azureEnd],
           ),
         ),
         child: Stack(
@@ -158,7 +155,7 @@ class _LoginScreenState extends State<LoginScreen>
                 },
               ),
             ),
-            
+
             // 메인 콘텐츠
             SafeArea(
               bottom: false,
@@ -175,7 +172,7 @@ class _LoginScreenState extends State<LoginScreen>
                       children: [
                         // 상단 여백 대폭 증가
                         SizedBox(height: isSmallScreen ? 80 : 120),
-                        
+
                         // 로고 애니메이션 (크기와 상하 여백 조정)
                         ScaleTransition(
                           scale: _logoEntryAnimation,
@@ -229,7 +226,9 @@ class _LoginScreenState extends State<LoginScreen>
                                       top: isSmallScreen ? 20 : 24,
                                       right: isSmallScreen ? 20 : 24,
                                       child: Container(
-                                        padding: EdgeInsets.all(isSmallScreen ? 3 : 4),
+                                        padding: EdgeInsets.all(
+                                          isSmallScreen ? 3 : 4,
+                                        ),
                                         decoration: BoxDecoration(
                                           color: Colors.orange,
                                           shape: BoxShape.circle,
@@ -252,7 +251,7 @@ class _LoginScreenState extends State<LoginScreen>
                           ),
                         ),
                         SizedBox(height: isSmallScreen ? 60 : 80),
-                        
+
                         // 환영 메시지 (애니메이션 추가)
                         FadeTransition(
                           opacity: _logoEntryAnimation,
@@ -277,7 +276,6 @@ class _LoginScreenState extends State<LoginScreen>
                                         offset: Offset(0, 2),
                                       ),
                                     ],
-
                                   ),
                                   textAlign: TextAlign.center,
                                 ),
@@ -297,7 +295,7 @@ class _LoginScreenState extends State<LoginScreen>
                           ),
                         ),
                         SizedBox(height: isSmallScreen ? 70 : 90),
-                        
+
                         // 로그인 옵션 (애니메이션 추가)
                         FadeTransition(
                           opacity: _formEntryAnimation,
@@ -315,7 +313,7 @@ class _LoginScreenState extends State<LoginScreen>
                                   // 사용자 이름 입력
                                   _buildNameInputField(isSmallScreen),
                                   SizedBox(height: isSmallScreen ? 24 : 30),
-                                  
+
                                   // 소셜 로그인 버튼들
                                   _buildSocialLoginButton(
                                     icon: Icons.g_mobiledata,
@@ -327,7 +325,7 @@ class _LoginScreenState extends State<LoginScreen>
                                     delay: 0,
                                   ),
                                   SizedBox(height: 12),
-                                  
+
                                   _buildSocialLoginButton(
                                     icon: Icons.chat_bubble,
                                     text: '카카오로 계속하기',
@@ -338,7 +336,7 @@ class _LoginScreenState extends State<LoginScreen>
                                     delay: 0.1,
                                   ),
                                   SizedBox(height: 12),
-                                  
+
                                   _buildSocialLoginButton(
                                     icon: Icons.north_east,
                                     text: '네이버로 계속하기',
@@ -349,52 +347,64 @@ class _LoginScreenState extends State<LoginScreen>
                                     delay: 0.2,
                                   ),
                                   SizedBox(height: 20),
-                                  
+
                                   // 이용약관 동의
-                                  Obx(() => InkWell(
-                                    onTap: () => _agreedToTerms.value = !_agreedToTerms.value,
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(4.0),
-                                      child: Row(
-                                        children: [
-                                          SizedBox(
-                                            height: 18,
-                                            width: 18,
-                                            child: Checkbox(
-                                              value: _agreedToTerms.value,
-                                              onChanged: (value) => _agreedToTerms.value = value ?? true,
-                                              fillColor: MaterialStateProperty.resolveWith(
-                                                (states) => Colors.blue.withOpacity(0.7),
-                                              ),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(4),
+                                  Obx(
+                                    () => InkWell(
+                                      onTap:
+                                          () =>
+                                              _agreedToTerms.value =
+                                                  !_agreedToTerms.value,
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(4.0),
+                                        child: Row(
+                                          children: [
+                                            SizedBox(
+                                              height: 18,
+                                              width: 18,
+                                              child: Checkbox(
+                                                value: _agreedToTerms.value,
+                                                onChanged:
+                                                    (value) =>
+                                                        _agreedToTerms.value =
+                                                            value ?? true,
+                                                fillColor:
+                                                    MaterialStateProperty.resolveWith(
+                                                      (states) => Colors.blue
+                                                          .withOpacity(0.7),
+                                                    ),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(4),
+                                                ),
                                               ),
                                             ),
-                                          ),
-                                          SizedBox(width: 8),
-                                          Expanded(
-                                            child: Text(
-                                              '이용약관 및 개인정보처리방침에 동의합니다',
-                                              style: TextStyle(
-                                                color: Colors.white.withOpacity(0.8),
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w300,
+                                            SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(
+                                                '이용약관 및 개인정보처리방침에 동의합니다',
+                                                style: TextStyle(
+                                                  color: Colors.white
+                                                      .withOpacity(0.8),
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w300,
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
                                               ),
-                                              overflow: TextOverflow.ellipsis,
                                             ),
-                                          ),
-                                        ],
+                                          ],
+                                        ),
                                       ),
                                     ),
-                                  )),
+                                  ),
                                 ],
                               ),
                             ),
                           ),
                         ),
                         SizedBox(height: isSmallScreen ? 24 : 36),
-                        
+
                         // 게스트 로그인 버튼 (애니메이션 추가)
                         FadeTransition(
                           opacity: _formEntryAnimation,
@@ -414,10 +424,7 @@ class _LoginScreenState extends State<LoginScreen>
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(
-                                  Icons.visibility_outlined,
-                                  size: 16,
-                                ),
+                                Icon(Icons.visibility_outlined, size: 16),
                                 SizedBox(width: 8),
                                 Text(
                                   '먼저 둘러보기',
@@ -462,10 +469,7 @@ class _LoginScreenState extends State<LoginScreen>
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.1),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.3),
-              width: 1,
-            ),
+            border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.1),
@@ -476,10 +480,7 @@ class _LoginScreenState extends State<LoginScreen>
           ),
           child: TextField(
             controller: _nameController,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 15,
-            ),
+            style: TextStyle(color: Colors.white, fontSize: 15),
             decoration: InputDecoration(
               hintText: '이름을 입력하세요',
               hintStyle: TextStyle(
@@ -507,18 +508,17 @@ class _LoginScreenState extends State<LoginScreen>
           ),
         ),
         // 오류 메시지
-        Obx(() => _nameError.value.isNotEmpty
-          ? Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(
-                _nameError.value,
-                style: TextStyle(
-                  color: Colors.redAccent,
-                  fontSize: 12,
-                ),
-              ),
-            )
-          : const SizedBox.shrink(),
+        Obx(
+          () =>
+              _nameError.value.isNotEmpty
+                  ? Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      _nameError.value,
+                      style: TextStyle(color: Colors.redAccent, fontSize: 12),
+                    ),
+                  )
+                  : const SizedBox.shrink(),
         ),
       ],
     );
@@ -542,7 +542,10 @@ class _LoginScreenState extends State<LoginScreen>
         ),
       ),
       child: SlideTransition(
-        position: Tween<Offset>(begin: Offset(0.2, 0), end: Offset.zero).animate(
+        position: Tween<Offset>(
+          begin: Offset(0.2, 0),
+          end: Offset.zero,
+        ).animate(
           CurvedAnimation(
             parent: _buttonsAnimationController,
             curve: Interval(delay, delay + 0.5, curve: Curves.easeOut),
@@ -576,20 +579,24 @@ class _LoginScreenState extends State<LoginScreen>
                       ),
                     ),
                   ),
-                  Obx(() => isLoading.value
-                    ? SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(textColor),
-                        ),
-                      )
-                    : Icon(
-                        Icons.arrow_forward_ios,
-                        color: textColor.withOpacity(0.5),
-                        size: 14,
-                      ),
+                  Obx(
+                    () =>
+                        isLoading.value
+                            ? SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  textColor,
+                                ),
+                              ),
+                            )
+                            : Icon(
+                              Icons.arrow_forward_ios,
+                              color: textColor.withOpacity(0.5),
+                              size: 14,
+                            ),
                   ),
                 ],
               ),
@@ -621,7 +628,7 @@ class _LoginScreenState extends State<LoginScreen>
       _isLoggingIn.value = false;
       return;
     }
-    
+
     if (!_agreedToTerms.value) {
       Get.snackbar(
         '약관 동의 필요',
@@ -730,6 +737,7 @@ class _LoginScreenState extends State<LoginScreen>
     Get.offAllNamed(AppRoutes.home);
   }
 }
+
 /// 배경 물결 애니메이션을 위한 커스텀 페인터
 class WavePainter extends CustomPainter {
   final double animationValue;
@@ -737,7 +745,7 @@ class WavePainter extends CustomPainter {
   final bool isTop;
 
   WavePainter({
-    required this.animationValue, 
+    required this.animationValue,
     required this.waveColor,
     this.isTop = false,
   });
@@ -747,84 +755,124 @@ class WavePainter extends CustomPainter {
     final width = size.width;
     final height = size.height;
     final paint = Paint()..color = waveColor;
-    
+
     if (isTop) {
       // 상단 물결 (역방향)
       final path = Path();
-      path.moveTo(0, height * 0.25 - math.sin(animationValue * 2 * 3.14159) * 15);
-      
+      path.moveTo(
+        0,
+        height * 0.25 - math.sin(animationValue * 2 * 3.14159) * 15,
+      );
+
       for (int i = 0; i < width; i++) {
         double x = i.toDouble();
-        double y = height * 0.25 - 
-          math.sin((animationValue * 2 * 3.14159) + (x / width * 2 * 3.14159)) * 15 - 
-          math.sin((animationValue * 4 * 3.14159) + (x / width * 3 * 3.14159)) * 8;
+        double y =
+            height * 0.25 -
+            math.sin(
+                  (animationValue * 2 * 3.14159) + (x / width * 2 * 3.14159),
+                ) *
+                15 -
+            math.sin(
+                  (animationValue * 4 * 3.14159) + (x / width * 3 * 3.14159),
+                ) *
+                8;
         path.lineTo(x, y);
       }
-      
+
       path.lineTo(width, 0);
       path.lineTo(0, 0);
       path.close();
-      
+
       canvas.drawPath(path, paint);
-      
+
       // 두 번째 상단 물결 (역방향)
       final path2 = Path();
       paint.color = waveColor.withOpacity(0.5);
-      path2.moveTo(0, height * 0.2 - math.sin(animationValue * 3 * 3.14159) * 10);
-      
+      path2.moveTo(
+        0,
+        height * 0.2 - math.sin(animationValue * 3 * 3.14159) * 10,
+      );
+
       for (int i = 0; i < width; i++) {
         double x = i.toDouble();
-        double y = height * 0.2 - 
-          math.sin((animationValue * 3 * 3.14159) + (x / width * 4 * 3.14159)) * 10 - 
-          math.sin((animationValue * 5 * 3.14159) + (x / width * 5 * 3.14159)) * 5;
+        double y =
+            height * 0.2 -
+            math.sin(
+                  (animationValue * 3 * 3.14159) + (x / width * 4 * 3.14159),
+                ) *
+                10 -
+            math.sin(
+                  (animationValue * 5 * 3.14159) + (x / width * 5 * 3.14159),
+                ) *
+                5;
         path2.lineTo(x, y);
       }
-      
+
       path2.lineTo(width, 0);
       path2.lineTo(0, 0);
       path2.close();
-      
+
       canvas.drawPath(path2, paint);
     } else {
       // 하단 물결 (기존 코드)
       final path = Path();
-      path.moveTo(0, height * 0.8 + math.sin(animationValue * 2 * 3.14159) * 10);
-      
+      path.moveTo(
+        0,
+        height * 0.8 + math.sin(animationValue * 2 * 3.14159) * 10,
+      );
+
       for (int i = 0; i < width; i++) {
         double x = i.toDouble();
-        double y = height * 0.8 + 
-          math.sin((animationValue * 2 * 3.14159) + (x / width * 2 * 3.14159)) * 10 + 
-          math.sin((animationValue * 4 * 3.14159) + (x / width * 4 * 3.14159)) * 5;
+        double y =
+            height * 0.8 +
+            math.sin(
+                  (animationValue * 2 * 3.14159) + (x / width * 2 * 3.14159),
+                ) *
+                10 +
+            math.sin(
+                  (animationValue * 4 * 3.14159) + (x / width * 4 * 3.14159),
+                ) *
+                5;
         path.lineTo(x, y);
       }
-      
+
       path.lineTo(width, height);
       path.lineTo(0, height);
       path.close();
-      
+
       canvas.drawPath(path, paint);
-      
+
       // 두 번째 물결 (하단)
       final path2 = Path();
       paint.color = waveColor.withOpacity(0.5);
-      path2.moveTo(0, height * 0.85 + math.sin(animationValue * 3 * 3.14159) * 8);
-      
+      path2.moveTo(
+        0,
+        height * 0.85 + math.sin(animationValue * 3 * 3.14159) * 8,
+      );
+
       for (int i = 0; i < width; i++) {
         double x = i.toDouble();
-        double y = height * 0.85 + 
-          math.sin((animationValue * 3 * 3.14159) + (x / width * 3 * 3.14159)) * 8 + 
-          math.sin((animationValue * 5 * 3.14159) + (x / width * 5 * 3.14159)) * 4;
+        double y =
+            height * 0.85 +
+            math.sin(
+                  (animationValue * 3 * 3.14159) + (x / width * 3 * 3.14159),
+                ) *
+                8 +
+            math.sin(
+                  (animationValue * 5 * 3.14159) + (x / width * 5 * 3.14159),
+                ) *
+                4;
         path2.lineTo(x, y);
       }
-      
+
       path2.lineTo(width, height);
       path2.lineTo(0, height);
       path2.close();
-      
+
       canvas.drawPath(path2, paint);
     }
   }
 
   @override
   bool shouldRepaint(WavePainter oldDelegate) => true;
-} 
+}
