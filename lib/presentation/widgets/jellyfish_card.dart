@@ -8,13 +8,13 @@ import 'package:jellyfish_test/data/models/jellyfish_model.dart';
 class JellyfishCard extends StatelessWidget {
   /// 해파리 데이터
   final Jellyfish jellyfish;
-  
+
   /// 카드 탭 이벤트 콜백
   final Function()? onTap;
-  
+
   /// 해파리가 발견되었는지 여부
   final bool? isDiscovered;
-  
+
   const JellyfishCard({
     super.key,
     required this.jellyfish,
@@ -26,7 +26,7 @@ class JellyfishCard extends StatelessWidget {
   Widget build(BuildContext context) {
     // isDiscovered 파라미터를 우선 사용하고, 없으면 모델의 isDiscovered 사용
     final discovered = isDiscovered ?? jellyfish.isDiscovered;
-    
+
     return GestureDetector(
       onTap: onTap,
       child: GlassContainer(
@@ -37,39 +37,57 @@ class JellyfishCard extends StatelessWidget {
           children: [
             // 해파리 이미지
             Expanded(
-              child: discovered
-                ? Hero(
-                    tag: 'jellyfish_${jellyfish.id}',
-                    child: Image.asset(
-                      jellyfish.imageUrl,
-                      fit: BoxFit.contain,
-                    ),
-                  )
-                : Center(
-                    child: Container(
-                      width: 100,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        color: AppTheme.azureStart.withOpacity(0.2),
-                        shape: BoxShape.circle,
+              child:
+                  discovered
+                      ? Hero(
+                        tag: 'jellyfish_${jellyfish.id}',
+                        child: Column(
+                          // Image.asset을 Column으로 감싸서 print 넣기 쉽게 함 (선택사항)
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // ================== 디버깅 코드 시작 ==================
+                            Builder(
+                              builder: (context) {
+                                // 여기서 print 또는 breakpoint 설정
+                                print(
+                                  'JellyfishCard - Loading image for ${jellyfish.name} (ID: ${jellyfish.id}): ${jellyfish.imageUrl}',
+                                );
+                                return const SizedBox.shrink(); // print만 하므로 빈 위젯 반환
+                              },
+                            ),
+                            // ================== 디버깅 코드 끝 ====================
+                            Expanded(
+                              // 이미지가 Expanded를 차지하도록 다시 감싸기
+                              child: Image.asset(
+                                jellyfish.imageUrl, // <- 이 값을 확인하려는 것
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                      : Center(
+                        child: Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            color: AppTheme.azureStart.withOpacity(0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.help_outline,
+                            color: AppTheme.azureStart.withOpacity(0.5),
+                            size: 50,
+                          ),
+                        ),
                       ),
-                      child: Icon(
-                        Icons.help_outline,
-                        color: AppTheme.azureStart.withOpacity(0.5),
-                        size: 50,
-                      ),
-                    ),
-                  ),
             ),
-            
+
             const SizedBox(height: 12),
-            
+
             // 위험도 표시
-            if (discovered) ...[
-              _buildDangerLevel(),
-              const SizedBox(height: 8),
-            ],
-            
+            if (discovered) ...[_buildDangerLevel(), const SizedBox(height: 8)],
+
             // 해파리 이름
             Text(
               discovered ? jellyfish.name : '???',
@@ -82,9 +100,9 @@ class JellyfishCard extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            
+
             const SizedBox(height: 4),
-            
+
             // 해파리 학명
             Text(
               discovered ? jellyfish.scientificName : '???',
@@ -98,10 +116,10 @@ class JellyfishCard extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            
+
             if (discovered) ...[
               const SizedBox(height: 12),
-              
+
               // 해파리 짧은 설명
               Text(
                 jellyfish.shortDescription,
@@ -119,7 +137,7 @@ class JellyfishCard extends StatelessWidget {
       ),
     );
   }
-  
+
   /// 위험도 표시 위젯 생성
   Widget _buildDangerLevel() {
     return Row(
@@ -137,7 +155,7 @@ class JellyfishCard extends StatelessWidget {
       ],
     );
   }
-  
+
   /// 위험도 인디케이터 생성
   Widget _buildDangerIndicator() {
     return Container(
@@ -160,7 +178,7 @@ class JellyfishCard extends StatelessWidget {
       ),
     );
   }
-  
+
   /// 위험도에 따른 간단한 텍스트 반환
   String _getDangerText(DangerLevel level) {
     switch (level) {
@@ -176,4 +194,4 @@ class JellyfishCard extends StatelessWidget {
         return '치명적';
     }
   }
-} 
+}

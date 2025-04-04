@@ -22,11 +22,12 @@ class _IdentificationScreenState extends State<IdentificationScreen>
 
   // 샘플 이미지 경로 목록
   final List<String> _sampleImages = [
-    'assets/images/jellyfish/compass_jellyfish.png',
-    'assets/images/jellyfish/lions_mane_jellyfish.png',
-    'assets/images/jellyfish/moon_jellyfish.png',
-    'assets/images/jellyfish/moon_jellyfish2.png',
-    'assets/images/jellyfish/box_jellyfish.png',
+    'assets/images/jellyfish/compass/compass1.jpg',
+    'assets/images/jellyfish/lions/lions1.jpg',
+    'assets/images/jellyfish/blue/blue1.jpg',
+    'assets/images/jellyfish/moon/moon1.jpg',
+    'assets/images/jellyfish/mauve/mauve1.jpg',
+    'assets/images/jellyfish/barrel/barrel1.jpg',
   ];
 
   // 현재 선택된 이미지
