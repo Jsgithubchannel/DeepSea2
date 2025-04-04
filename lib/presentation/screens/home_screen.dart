@@ -13,36 +13,32 @@ import 'package:jellyfish_test/core/controllers/quiz_controller.dart';
 
 /// 홈 화면
 class HomeScreen extends StatelessWidget {
-  final JellyfishController _jellyfishController = Get.find<JellyfishController>();
+  final JellyfishController _jellyfishController =
+      Get.find<JellyfishController>();
   final UserController _userController = Get.find<UserController>();
   final QuizController _quizController = Get.find<QuizController>();
-  
+
   // 임시 이벤트 데이터
   final RxBool _hasEvent = true.obs;
-  
+
   HomeScreen({super.key});
-  
+
   @override
   Widget build(BuildContext context) {
     print('HomeScreen 빌드 중...');
     return Obx(() {
       // 로딩 상태 확인
       if (_jellyfishController.isLoading || _userController.isLoading) {
-        return const Center(
-          child: CircularProgressIndicator(),
-        );
+        return const Center(child: CircularProgressIndicator());
       }
-      
+
       return Scaffold(
         body: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                AppTheme.azureStart,
-                AppTheme.azureEnd,
-              ],
+              colors: [AppTheme.azureStart, AppTheme.azureEnd],
             ),
           ),
           child: Stack(
@@ -86,7 +82,7 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              
+
               // 메인 컨텐츠
               SafeArea(
                 child: Column(
@@ -146,12 +142,12 @@ class HomeScreen extends StatelessWidget {
       );
     });
   }
-  
+
   /// 프로필 섹션
   Widget _buildProfileSection(BuildContext context) {
     return Obx(() {
       final user = _userController.user;
-      
+
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: Row(
@@ -172,7 +168,7 @@ class HomeScreen extends StatelessWidget {
                     color: Colors.blue.withOpacity(0.3),
                     blurRadius: 10,
                     spreadRadius: 1,
-                  )
+                  ),
                 ],
               ),
               child: Stack(
@@ -247,7 +243,11 @@ class HomeScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      const Icon(Icons.verified, color: Colors.cyanAccent, size: 20),
+                      const Icon(
+                        Icons.verified,
+                        color: Colors.cyanAccent,
+                        size: 20,
+                      ),
                     ],
                   ),
                   const SizedBox(height: 4),
@@ -292,7 +292,7 @@ class HomeScreen extends StatelessWidget {
       );
     });
   }
-  
+
   /// 뱃지 위젯
   Widget _buildBadge({
     required String icon,
@@ -332,13 +332,13 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
-  
+
   /// 경험치 바
   Widget _buildXpProgressBar(BuildContext context) {
     return Obx(() {
       final user = _userController.user;
       final xpPercentage = user.levelProgress * 100;
-      
+
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: GlassContainer(
@@ -383,7 +383,10 @@ class HomeScreen extends StatelessWidget {
                   // 진행 바
                   Container(
                     height: 8,
-                    width: (MediaQuery.of(context).size.width * (xpPercentage / 100) - 64).clamp(0.0, double.infinity),
+                    width: (MediaQuery.of(context).size.width *
+                                (xpPercentage / 100) -
+                            64)
+                        .clamp(0.0, double.infinity),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [Colors.cyan, Colors.blue, Colors.indigo],
@@ -428,14 +431,14 @@ class HomeScreen extends StatelessWidget {
       );
     });
   }
-  
+
   /// 돌발 이벤트 배너
   Widget _buildEventBanner(BuildContext context) {
     return GetBuilder<QuizController>(
       builder: (quizController) {
         // 활성화된 돌발 퀴즈가 있는지 확인
         final hasEmergencyQuiz = quizController.hasActiveEmergencyQuiz();
-        
+
         // 돌발 퀴즈가 없으면 일반 이벤트 배너 표시
         if (!hasEmergencyQuiz) {
           return GlassContainer(
@@ -474,10 +477,7 @@ class HomeScreen extends StatelessWidget {
                         SizedBox(height: 2),
                         Text(
                           '해파리를 발견하고 경험치를 얻으세요',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.white70,
-                          ),
+                          style: TextStyle(fontSize: 12, color: Colors.white70),
                         ),
                       ],
                     ),
@@ -502,7 +502,7 @@ class HomeScreen extends StatelessWidget {
             ),
           );
         }
-        
+
         // 돌발 퀴즈가 있는 경우 빨간색 긴급 배너 표시
         return GestureDetector(
           onTap: () {
@@ -516,7 +516,7 @@ class HomeScreen extends StatelessWidget {
                 // 경고 아이콘
                 Container(
                   width: 36,
-                  height: 36, 
+                  height: 36,
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(10),
@@ -566,10 +566,7 @@ class HomeScreen extends StatelessWidget {
                       const SizedBox(height: 4),
                       const Text(
                         '해파리 쏘임 응급처치법을 확인하세요!',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.white,
-                        ),
+                        style: TextStyle(fontSize: 12, color: Colors.white),
                       ),
                     ],
                   ),
@@ -640,7 +637,7 @@ class HomeScreen extends StatelessWidget {
       },
     );
   }
-  
+
   /// 발견 진행도 위젯
   Widget _buildDiscoveryProgress(BuildContext context) {
     return Obx(() {
@@ -693,7 +690,10 @@ class HomeScreen extends StatelessWidget {
                   ),
                   Container(
                     height: 10,
-                    width: (MediaQuery.of(context).size.width * (discoveryRate / 100) - 32).clamp(0.0, double.infinity),
+                    width: (MediaQuery.of(context).size.width *
+                                (discoveryRate / 100) -
+                            32)
+                        .clamp(0.0, double.infinity),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [Colors.cyan, Colors.lightBlue, Colors.blue],
@@ -726,7 +726,8 @@ class HomeScreen extends StatelessWidget {
                     icon: Icons.help_outline,
                     iconColor: Colors.grey,
                     label: '미발견',
-                    count: _jellyfishController.undiscoveredJellyfishList.length,
+                    count:
+                        _jellyfishController.undiscoveredJellyfishList.length,
                   ),
                   // 전체 정보
                   _buildDiscoveryInfoBadge(
@@ -743,7 +744,7 @@ class HomeScreen extends StatelessWidget {
       );
     });
   }
-  
+
   /// 발견 정보 배지
   Widget _buildDiscoveryInfoBadge({
     required IconData icon,
@@ -772,7 +773,7 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
-  
+
   /// 섹션 제목 위젯
   Widget _buildSectionTitle(String title) {
     return Padding(
@@ -787,12 +788,12 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
-  
+
   /// 최근 발견한 해파리 섹션
   Widget _buildRecentlyDiscoveredSection() {
     return Obx(() {
       final discoveredJellyfish = _jellyfishController.discoveredJellyfishList;
-      
+
       if (discoveredJellyfish.isEmpty) {
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -830,7 +831,10 @@ class HomeScreen extends StatelessWidget {
                       backgroundColor: Colors.blue,
                       foregroundColor: Colors.white,
                       elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -849,7 +853,7 @@ class HomeScreen extends StatelessWidget {
           ),
         );
       }
-      
+
       return SizedBox(
         height: 240,
         child: ListView.builder(
@@ -864,10 +868,11 @@ class HomeScreen extends StatelessWidget {
               margin: const EdgeInsets.only(right: 16),
               child: JellyfishCard(
                 jellyfish: jellyfish,
-                onTap: () => Get.toNamed(
-                  AppRoutes.jellyfishDetail,
-                  arguments: {'jellyfishId': jellyfish.id},
-                ),
+                onTap:
+                    () => Get.toNamed(
+                      AppRoutes.jellyfishDetail,
+                      arguments: {'jellyfishId': jellyfish.id},
+                    ),
               ),
             );
           },
@@ -875,5 +880,4 @@ class HomeScreen extends StatelessWidget {
       );
     });
   }
-  
-} 
+}
