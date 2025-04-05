@@ -42,21 +42,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       // 해파리 모델 로드
       _jellyfishController.update();
 
-      // 사용자 정보는 이미 로드됨
-
-      // 발견한 해파리 개수
-      final discoveredCount =
-          _jellyfishController.discoveredJellyfishList.length;
-      print('발견한 해파리 수: $discoveredCount');
-
-      // 퀴즈 완료 요약 조회 - 개선된 방식
-      final quizSummary = await _userController.getQuizCompletionSummary();
-      print('퀴즈 완료 요약: $quizSummary');
-      print('총 완료 퀴즈: ${quizSummary['total']}');
-      print('일일 퀴즈: ${quizSummary['daily']}');
-      print('돌발 퀴즈: ${quizSummary['emergency']}');
-      print('완료된 퀴즈 ID: ${quizSummary['quizIds']}');
-
       // 상태 업데이트
       setState(() {});
     } catch (e) {
