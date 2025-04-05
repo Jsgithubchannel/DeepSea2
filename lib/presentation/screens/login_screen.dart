@@ -660,25 +660,7 @@ class _LoginScreenState extends State<LoginScreen>
       // 4. 로그인 성공 여부 확인
       if (firebaseUser != null) {
         // Google 로그인 성공
-        print('LoginScreen: Google 로그인 성공 확인됨 - UID: ${firebaseUser.uid}');
-
-        // UserController의 _handleAuthStateChanged가 비동기적으로 실행되어
-        // _user 상태를 업데이트했을 것입니다.
-        // initState의 'ever' 리스너가 _nameController를 업데이트 했을 수 있습니다.
-        // 잠시 기다려 상태 반영 시간을 줄 수 있습니다 (선택적).
-        // await Future.delayed(Duration(milliseconds: 100));
-
-        // 5. 최종 로그인 처리 (이름 검증, 데이터 업데이트, 화면 전환)
-        // _processLogin은 내부적으로 _nameController의 값을 사용하고,
-        // 약관 동의를 다시 확인하며, 사용자 이름/로그인 날짜 업데이트 후 화면 전환.
         await _processLogin();
-      } else {
-        // Google 로그인 실패 또는 취소됨
-        // UserController 내부 또는 _handleAuthStateChanged에서
-        // 이미 사용자에게 Snackbar 등으로 알렸을 수 있습니다.
-        print('LoginScreen: Google 로그인 실패 또는 취소됨.');
-        // 여기서 추가적인 실패 메시지를 표시할 수도 있습니다.
-        // Get.snackbar('로그인 실패', 'Google 계정으로 로그인하지 못했습니다.', snackPosition: SnackPosition.BOTTOM);
       }
     } catch (e) {
       // 예기치 못한 에러 처리 (signInWithGoogle 내부에서 처리되지 않은 경우)
@@ -690,20 +672,12 @@ class _LoginScreenState extends State<LoginScreen>
       );
     } finally {
       // 6. 로딩 상태 종료 (성공/실패/오류 여부와 관계없이)
-      // _processLogin 성공 시 화면 전환이 일어나므로,
-      // 실패/취소/오류 시에만 false로 설정되도록 할 수도 있습니다.
-      // 하지만 일반적으로는 항상 종료하는 것이 안전합니다.
       if (mounted) {
         // 위젯이 여전히 마운트 상태인지 확인
         _isLoggingIn.value = false;
       }
     }
   }
-
-  // _processLogin 함수는 이름 검증, 약관 재확인,
-  // _userController.updateUsername, _userController.updateLastLoginDate 호출,
-  // 화면 전환(_navigateToPermission)을 수행합니다.
-  // Google 로그인 시 이름이 자동으로 채워졌더라도 _validateName()을 통과해야 합니다.
 
   // 권한 화면으로 이동
   void _navigateToPermission() {

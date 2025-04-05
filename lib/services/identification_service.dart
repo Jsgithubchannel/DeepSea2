@@ -21,33 +21,21 @@ class IdentificationService {
 
     try {
       // 1. Firebase에서 모델 다운로드
-      print('Downloading model...');
       final customModel = await FirebaseModelDownloader.instance.getModel(
         _modelName,
         FirebaseModelDownloadType.localModelUpdateInBackground,
         FirebaseModelDownloadConditions(),
       );
       final modelFile = customModel.file;
-      print("Firebase 모델 다운로드 시도: $_modelName");
-      print('Model downloaded to: ${modelFile.path}');
 
       // 2. tflite 인터프리터 로드
-      print('Loading interpreter...');
       _interpreter = await Interpreter.fromFile(modelFile);
-      // _interpreter.allocateTensors(); // 필요시 텐서 할당
 
-      // 3. 레이블 파일 로드 (assets/labels.txt)
-      print('Loading labels...');
+      // 3. 레이블 파일 로드
       _labels = await _loadLabels('assets/labels.txt');
 
       _isModelLoaded = true;
       print('Model and labels loaded successfully.');
-      print(
-        'Input details: ${_interpreter?.getInputTensor(0).shape} ${_interpreter?.getInputTensor(0).type}',
-      );
-      print(
-        'Output details: ${_interpreter?.getOutputTensor(0).shape} ${_interpreter?.getOutputTensor(0).type}',
-      );
     } catch (e) {
       print('Error loading model: $e');
       _isModelLoaded = false;
@@ -82,13 +70,11 @@ class IdentificationService {
 
     try {
       // 1. 이미지 로드 및 전처리
-      print('Preprocessing image: $imagePath');
       final inputTensor = await _preprocessImage(imagePath);
       if (inputTensor == null) {
         print('Image preprocessing failed.');
         return null;
       }
-      print('Image preprocessing done.');
 
       // 2. 출력 텐서 준비
       final outputShape = _interpreter!.getOutputTensor(0).shape; // 예: [1, 6]
@@ -112,12 +98,11 @@ class IdentificationService {
       }
 
       // 3. 모델 추론 실행
-      print('Running inference...');
+
       _interpreter!.run(inputTensor, outputTensor);
-      print('Inference completed.');
 
       // 4. 결과 후처리
-      List<num> results; // num 타입으로 변경하여 float/int 모두 처리
+      List<num> results;
       if (outputTensor[0] is List<double>) {
         results = outputTensor[0] as List<double>;
       } else if (outputTensor[0] is List<int>) {
@@ -148,7 +133,6 @@ class IdentificationService {
         print("$key: ${value.toStringAsFixed(4)}");
       });
       print("--------------------------");
-      // --- 디버깅 끝 ---
 
       // 확률 순으로 정렬 (가장 높은 확률이 먼저 오도록)
       var sortedEntries =
@@ -156,9 +140,6 @@ class IdentificationService {
             ..sort((a, b) => b.value.compareTo(a.value));
 
       if (sortedEntries.isNotEmpty) {
-        print(
-          "Top Identification Result: ${sortedEntries.first.key} (${sortedEntries.first.value.toStringAsFixed(3)})",
-        );
         return {
           sortedEntries.first.key: sortedEntries.first.value,
         }; // 가장 높은 확률의 결과 반환
@@ -198,9 +179,6 @@ class IdentificationService {
       final inputWidth = IMG_SIZE;
       final TensorType inputType = inputDetails.type;
 
-      print('Model Input Type from Interpreter: $inputType');
-      print('Resizing image to ${inputWidth}x$inputHeight');
-
       img.Image resizedImage = img.copyResize(
         image,
         width: inputWidth,
@@ -220,9 +198,6 @@ class IdentificationService {
             buffer[pixelIndex++] = pixel.b.toDouble();
           }
         }
-        print(
-          'Image processed as Float32 (0-255 range). Buffer size: ${buffer.length}',
-        );
         return buffer.buffer.asUint8List();
       } else if (inputType == TensorType.uint8) {
         var buffer = Uint8List(1 * inputHeight * inputWidth * 3);
@@ -237,9 +212,6 @@ class IdentificationService {
             buffer[pixelIndex++] = pixel.b.toInt();
           }
         }
-        print(
-          'Image processed as Uint8 (0-255 range). Buffer size: ${buffer.length}',
-        );
         return buffer;
       } else {
         print("Unsupported input type from model: $inputType");

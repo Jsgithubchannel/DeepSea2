@@ -16,51 +16,53 @@ class CollectionScreen extends StatefulWidget {
   _CollectionScreenState createState() => _CollectionScreenState();
 }
 
-class _CollectionScreenState extends State<CollectionScreen> with TickerProviderStateMixin {
-  final JellyfishController _jellyfishController = Get.find<JellyfishController>();
-  
+class _CollectionScreenState extends State<CollectionScreen>
+    with TickerProviderStateMixin {
+  final JellyfishController _jellyfishController =
+      Get.find<JellyfishController>();
+
   // 보기 모드 (0: 카드형, 1: 격자형)
   final RxInt _viewMode = 0.obs;
-  
+
   // 필터 (0: 전체, 1: 발견, 2: 미발견)
   final RxInt _filter = 0.obs;
-  
+
   // 현재 페이지 인덱스
   final RxInt _currentPage = 0.obs;
-  
+
   // 탭 컨트롤러
   late TabController _tabController;
-  
+
   // 페이지 뷰 컨트롤러
   late PageController _pageController;
-  
+
   // 애니메이션 컨트롤러
   late AnimationController _animationController;
   late Animation<double> _animation;
-  
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _pageController = PageController(viewportFraction: 0.85);
-    
+
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    
+
     _animation = CurvedAnimation(
       parent: _animationController,
       curve: Curves.easeInOut,
     );
-    
+
     // 페이지 변경 리스너 추가
     _pageController.addListener(_onPageChanged);
-    
+
     // 초기에는 카드형 뷰 (애니메이션이 닫힌 상태)
     _animationController.value = 0.0;
   }
-  
+
   @override
   void dispose() {
     _pageController.removeListener(_onPageChanged);
@@ -69,7 +71,7 @@ class _CollectionScreenState extends State<CollectionScreen> with TickerProvider
     _animationController.dispose();
     super.dispose();
   }
-  
+
   // 페이지 변경 감지
   void _onPageChanged() {
     final page = _pageController.page?.round() ?? 0;
@@ -77,7 +79,7 @@ class _CollectionScreenState extends State<CollectionScreen> with TickerProvider
       _currentPage.value = page;
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -87,10 +89,7 @@ class _CollectionScreenState extends State<CollectionScreen> with TickerProvider
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              AppTheme.azureStart,
-              AppTheme.azureEnd,
-            ],
+            colors: [AppTheme.azureStart, AppTheme.azureEnd],
           ),
         ),
         child: SafeArea(
@@ -102,7 +101,7 @@ class _CollectionScreenState extends State<CollectionScreen> with TickerProvider
                 child: Obx(() {
                   // 필터에 따라 다른 리스트 반환
                   final jellyfishList = _getFilteredList();
-                  
+
                   // 뷰 모드에 따라 다른 UI 보여주기
                   return AnimatedBuilder(
                     animation: _animation,
@@ -143,7 +142,7 @@ class _CollectionScreenState extends State<CollectionScreen> with TickerProvider
       ),
     );
   }
-  
+
   // 앱바 구현
   Widget _buildAppBar() {
     return Padding(
@@ -166,75 +165,79 @@ class _CollectionScreenState extends State<CollectionScreen> with TickerProvider
               ),
             ],
           ),
-          
+
           // 뷰 모드 토글 버튼
-          GlassContainer(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-            borderRadius: 12,
-            child: Row(
-              children: [
-                // 카드형 버튼
-                _buildViewToggleButton(
-                  icon: Icons.view_carousel,
-                  isSelected: _viewMode.value == 0,
-                  onTap: () {
-                    _viewMode.value = 0;
-                    _animationController.reverse();
-                  },
-                ),
-                
-                // 그리드형 버튼
-                _buildViewToggleButton(
-                  icon: Icons.grid_view,
-                  isSelected: _viewMode.value == 1,
-                  onTap: () {
-                    _viewMode.value = 1;
-                    _animationController.forward();
-                  },
-                ),
-              ],
+          Obx(
+            () => GlassContainer(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+              borderRadius: 12,
+              child: Row(
+                children: [
+                  // 카드형 버튼
+                  _buildViewToggleButton(
+                    icon: Icons.view_carousel,
+                    isSelected: _viewMode.value == 0,
+                    onTap: () {
+                      _viewMode.value = 0;
+                      _animationController.reverse();
+                    },
+                  ),
+
+                  // 그리드형 버튼
+                  _buildViewToggleButton(
+                    icon: Icons.grid_view,
+                    isSelected: _viewMode.value == 1,
+                    onTap: () {
+                      _viewMode.value = 1;
+                      _animationController.forward();
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
         ],
       ),
     );
   }
-  
+
   // 필터 칩 구현
   Widget _buildFilterChips() {
     return Container(
       height: 50,
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        children: [
-          _buildFilterChip(
-            label: '전체',
-            isSelected: _filter.value == 0,
-            onTap: () => _filter.value = 0,
-            count: _jellyfishController.jellyfishList.length,
-          ),
-          const SizedBox(width: 8),
-          _buildFilterChip(
-            label: '발견',
-            isSelected: _filter.value == 1,
-            onTap: () => _filter.value = 1,
-            count: _jellyfishController.discoveredJellyfishList.length,
-            iconColor: Colors.green,
-          ),
-          const SizedBox(width: 8),
-          _buildFilterChip(
-            label: '미발견',
-            isSelected: _filter.value == 2,
-            onTap: () => _filter.value = 2,
-            count: _jellyfishController.undiscoveredJellyfishList.length,
-            iconColor: Colors.grey,
-          ),
-        ],
+      child: Obx(
+        () => ListView(
+          scrollDirection: Axis.horizontal,
+          children: [
+            _buildFilterChip(
+              label: '전체',
+              isSelected: _filter.value == 0,
+              onTap: () => _filter.value = 0,
+              count: _jellyfishController.jellyfishList.length,
+            ),
+            const SizedBox(width: 8),
+            _buildFilterChip(
+              label: '발견',
+              isSelected: _filter.value == 1,
+              onTap: () => _filter.value = 1,
+              count: _jellyfishController.discoveredJellyfishList.length,
+              iconColor: Colors.green,
+            ),
+            const SizedBox(width: 8),
+            _buildFilterChip(
+              label: '미발견',
+              isSelected: _filter.value == 2,
+              onTap: () => _filter.value = 2,
+              count: _jellyfishController.undiscoveredJellyfishList.length,
+              iconColor: Colors.grey,
+            ),
+          ],
+        ),
       ),
     );
   }
-  
+
   // 개별 필터 칩 위젯
   Widget _buildFilterChip({
     required String label,
@@ -249,14 +252,13 @@ class _CollectionScreenState extends State<CollectionScreen> with TickerProvider
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected
-              ? Colors.blue.withOpacity(0.2)
-              : Colors.white.withOpacity(0.1),
+          color:
+              isSelected
+                  ? Colors.blue.withOpacity(0.2)
+                  : Colors.white.withOpacity(0.1),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected
-                ? Colors.blue
-                : Colors.white.withOpacity(0.2),
+            color: isSelected ? Colors.blue : Colors.white.withOpacity(0.2),
           ),
         ),
         child: Row(
@@ -278,16 +280,18 @@ class _CollectionScreenState extends State<CollectionScreen> with TickerProvider
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: isSelected
-                    ? Colors.blue.withOpacity(0.3)
-                    : Colors.black.withOpacity(0.2),
+                color:
+                    isSelected
+                        ? Colors.blue.withOpacity(0.3)
+                        : Colors.black.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
                 count.toString(),
                 style: TextStyle(
                   fontSize: 10,
-                  color: isSelected ? Colors.white : Colors.white.withOpacity(0.8),
+                  color:
+                      isSelected ? Colors.white : Colors.white.withOpacity(0.8),
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -297,7 +301,7 @@ class _CollectionScreenState extends State<CollectionScreen> with TickerProvider
       ),
     );
   }
-  
+
   // 뷰 모드 토글 버튼
   Widget _buildViewToggleButton({
     required IconData icon,
@@ -309,9 +313,7 @@ class _CollectionScreenState extends State<CollectionScreen> with TickerProvider
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected
-              ? Colors.blue.withOpacity(0.3)
-              : Colors.transparent,
+          color: isSelected ? Colors.blue.withOpacity(0.3) : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(
@@ -322,13 +324,13 @@ class _CollectionScreenState extends State<CollectionScreen> with TickerProvider
       ),
     );
   }
-  
+
   // 카드형 뷰 구현
   Widget _buildCardView(List<Jellyfish> jellyfishList) {
     if (jellyfishList.isEmpty) {
       return _buildEmptyState();
     }
-    
+
     return Column(
       children: [
         // 메인 카드 뷰어
@@ -347,7 +349,7 @@ class _CollectionScreenState extends State<CollectionScreen> with TickerProvider
             },
           ),
         ),
-        
+
         // 하단 미니 카드 리스트
         const SizedBox(height: 16),
         SizedBox(
@@ -359,7 +361,13 @@ class _CollectionScreenState extends State<CollectionScreen> with TickerProvider
             itemCount: jellyfishList.length,
             itemBuilder: (context, index) {
               final jellyfish = jellyfishList[index];
-              return Obx(() => _buildMiniCard(jellyfish, index, _currentPage.value == index));
+              return Obx(
+                () => _buildMiniCard(
+                  jellyfish,
+                  index,
+                  _currentPage.value == index,
+                ),
+              );
             },
           ),
         ),
@@ -367,13 +375,13 @@ class _CollectionScreenState extends State<CollectionScreen> with TickerProvider
       ],
     );
   }
-  
+
   // 그리드형 뷰 구현
   Widget _buildGridView(List<Jellyfish> jellyfishList) {
     if (jellyfishList.isEmpty) {
       return _buildEmptyState();
     }
-    
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: GridView.builder(
@@ -392,16 +400,17 @@ class _CollectionScreenState extends State<CollectionScreen> with TickerProvider
       ),
     );
   }
-  
+
   // 빈 상태 위젯
   Widget _buildEmptyState() {
     String message = '데이터가 없습니다';
     if (_filter.value == 1) {
       message = '아직 발견한 해파리가 없습니다';
-    } else if (_filter.value == 2 && _jellyfishController.undiscoveredJellyfishList.isEmpty) {
+    } else if (_filter.value == 2 &&
+        _jellyfishController.undiscoveredJellyfishList.isEmpty) {
       message = '모든 해파리를 발견했습니다!';
     }
-    
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -449,11 +458,11 @@ class _CollectionScreenState extends State<CollectionScreen> with TickerProvider
       ),
     );
   }
-  
+
   // 상세 카드 위젯
   Widget _buildDetailCard(Jellyfish jellyfish, int index) {
     final isDiscovered = jellyfish.isDiscovered;
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
       child: GestureDetector(
@@ -483,25 +492,28 @@ class _CollectionScreenState extends State<CollectionScreen> with TickerProvider
                           topLeft: Radius.circular(20),
                           topRight: Radius.circular(20),
                         ),
-                        image: isDiscovered
-                            ? DecorationImage(
-                                image: AssetImage(jellyfish.imageUrl),
-                                fit: BoxFit.cover,
-                              )
-                            : null,
-                        color: isDiscovered ? null : Colors.grey.withOpacity(0.3),
+                        image:
+                            isDiscovered
+                                ? DecorationImage(
+                                  image: AssetImage(jellyfish.imageUrl),
+                                  fit: BoxFit.cover,
+                                )
+                                : null,
+                        color:
+                            isDiscovered ? null : Colors.grey.withOpacity(0.3),
                       ),
-                      child: !isDiscovered
-                          ? Center(
-                              child: Icon(
-                                Icons.help_outline,
-                                size: 80,
-                                color: Colors.white.withOpacity(0.4),
-                              ),
-                            )
-                          : null,
+                      child:
+                          !isDiscovered
+                              ? Center(
+                                child: Icon(
+                                  Icons.help_outline,
+                                  size: 80,
+                                  color: Colors.white.withOpacity(0.4),
+                                ),
+                              )
+                              : null,
                     ),
-                    
+
                     // 위험도 배지
                     if (isDiscovered)
                       Positioned(
@@ -536,7 +548,7 @@ class _CollectionScreenState extends State<CollectionScreen> with TickerProvider
                           ),
                         ),
                       ),
-                      
+
                     // 번호 배지
                     Positioned(
                       top: 16,
@@ -563,7 +575,7 @@ class _CollectionScreenState extends State<CollectionScreen> with TickerProvider
                   ],
                 ),
               ),
-              
+
               // 정보 영역
               Expanded(
                 flex: 3,
@@ -595,7 +607,7 @@ class _CollectionScreenState extends State<CollectionScreen> with TickerProvider
                             ),
                         ],
                       ),
-                      
+
                       // 학명
                       if (isDiscovered)
                         Padding(
@@ -609,9 +621,9 @@ class _CollectionScreenState extends State<CollectionScreen> with TickerProvider
                             ),
                           ),
                         ),
-                        
+
                       const Spacer(),
-                      
+
                       // 퀴즈 정보 및 발견 날짜
                       if (isDiscovered)
                         Row(
@@ -697,11 +709,11 @@ class _CollectionScreenState extends State<CollectionScreen> with TickerProvider
       ),
     );
   }
-  
+
   // 미니 카드 위젯
   Widget _buildMiniCard(Jellyfish jellyfish, int index, bool isSelected) {
     final isDiscovered = jellyfish.isDiscovered;
-    
+
     return GestureDetector(
       onTap: () {
         // 페이지 뷰 이동
@@ -717,53 +729,57 @@ class _CollectionScreenState extends State<CollectionScreen> with TickerProvider
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected 
-                ? Colors.blue.withOpacity(0.8) 
-                : Colors.white.withOpacity(0.2),
+            color:
+                isSelected
+                    ? Colors.blue.withOpacity(0.8)
+                    : Colors.white.withOpacity(0.2),
             width: isSelected ? 2 : 1,
           ),
-          image: isDiscovered
-              ? DecorationImage(
-                  image: AssetImage(jellyfish.imageUrl),
-                  fit: BoxFit.cover,
-                )
-              : null,
+          image:
+              isDiscovered
+                  ? DecorationImage(
+                    image: AssetImage(jellyfish.imageUrl),
+                    fit: BoxFit.cover,
+                  )
+                  : null,
           color: isDiscovered ? null : Colors.grey.withOpacity(0.3),
         ),
-        child: !isDiscovered
-            ? Center(
-                child: Icon(
-                  Icons.help_outline,
-                  color: Colors.white.withOpacity(0.4),
-                ),
-              )
-            : Center(
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? Colors.blue.withOpacity(0.8)
-                        : Colors.black.withOpacity(0.6),
-                    shape: BoxShape.circle,
+        child:
+            !isDiscovered
+                ? Center(
+                  child: Icon(
+                    Icons.help_outline,
+                    color: Colors.white.withOpacity(0.4),
                   ),
-                  child: Text(
-                    '${index + 1}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
+                )
+                : Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color:
+                          isSelected
+                              ? Colors.blue.withOpacity(0.8)
+                              : Colors.black.withOpacity(0.6),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      '${index + 1}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
                 ),
-              ),
       ),
     );
   }
-  
+
   // 그리드 카드 위젯
   Widget _buildGridCard(Jellyfish jellyfish) {
     final isDiscovered = jellyfish.isDiscovered;
-    
+
     return GestureDetector(
       onTap: () {
         if (isDiscovered) {
@@ -788,89 +804,93 @@ class _CollectionScreenState extends State<CollectionScreen> with TickerProvider
                     topLeft: Radius.circular(16),
                     topRight: Radius.circular(16),
                   ),
-                  image: isDiscovered
-                      ? DecorationImage(
-                          image: AssetImage(jellyfish.imageUrl),
-                          fit: BoxFit.cover,
-                        )
-                      : null,
+                  image:
+                      isDiscovered
+                          ? DecorationImage(
+                            image: AssetImage(jellyfish.imageUrl),
+                            fit: BoxFit.cover,
+                          )
+                          : null,
                   color: isDiscovered ? null : Colors.grey.withOpacity(0.3),
                 ),
-                child: !isDiscovered
-                    ? Center(
-                        child: Icon(
-                          Icons.help_outline,
-                          size: 40,
-                          color: Colors.white.withOpacity(0.4),
-                        ),
-                      )
-                    : Stack(
-                        children: [
-                          // 위험도 배지
-                          Positioned(
-                            top: 8,
-                            right: 8,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 3,
-                              ),
-                              decoration: BoxDecoration(
-                                color: jellyfish.dangerColor,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                _getDangerText(jellyfish.dangerLevel),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 10,
+                child:
+                    !isDiscovered
+                        ? Center(
+                          child: Icon(
+                            Icons.help_outline,
+                            size: 40,
+                            color: Colors.white.withOpacity(0.4),
+                          ),
+                        )
+                        : Stack(
+                          children: [
+                            // 위험도 배지
+                            Positioned(
+                              top: 8,
+                              right: 8,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: jellyfish.dangerColor,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  _getDangerText(jellyfish.dangerLevel),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 10,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
+                          ],
+                        ),
               ),
             ),
-            
+
             // 정보 영역
             Expanded(
               flex: 2,
               child: Padding(
-                padding: const EdgeInsets.all(12.0),
+                padding: const EdgeInsets.all(8.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // 이름
-                    Text(
-                      isDiscovered ? jellyfish.name : '???',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    
-                    if (isDiscovered)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 2.0),
-                        child: Text(
-                          jellyfish.scientificName,
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontStyle: FontStyle.italic,
-                            color: Colors.white.withOpacity(0.7),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isDiscovered ? jellyfish.name : '???',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                      
-                    const Spacer(),
-                    
+                        if (isDiscovered)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2.0),
+                            child: Text(
+                              jellyfish.scientificName,
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontStyle: FontStyle.italic,
+                                color: Colors.white.withOpacity(0.7),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                      ],
+                    ),
+
                     // 상태 정보
                     Row(
                       children: [
@@ -912,9 +932,9 @@ class _CollectionScreenState extends State<CollectionScreen> with TickerProvider
                               ),
                             ),
                           ),
-                          
+
                         const Spacer(),
-                        
+
                         // 퀴즈 정보
                         if (isDiscovered)
                           Container(
@@ -955,7 +975,7 @@ class _CollectionScreenState extends State<CollectionScreen> with TickerProvider
       ),
     );
   }
-  
+
   // 필터에 따라 적절한 리스트 반환
   List<Jellyfish> _getFilteredList() {
     switch (_filter.value) {
@@ -967,7 +987,7 @@ class _CollectionScreenState extends State<CollectionScreen> with TickerProvider
         return _jellyfishController.jellyfishList;
     }
   }
-  
+
   // 위험도 텍스트 반환
   String _getDangerText(DangerLevel level) {
     switch (level) {
@@ -983,4 +1003,4 @@ class _CollectionScreenState extends State<CollectionScreen> with TickerProvider
         return '치명적';
     }
   }
-} 
+}

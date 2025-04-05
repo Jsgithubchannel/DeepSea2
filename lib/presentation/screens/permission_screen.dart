@@ -12,7 +12,8 @@ class PermissionScreen extends StatefulWidget {
   _PermissionScreenState createState() => _PermissionScreenState();
 }
 
-class _PermissionScreenState extends State<PermissionScreen> with SingleTickerProviderStateMixin {
+class _PermissionScreenState extends State<PermissionScreen>
+    with SingleTickerProviderStateMixin {
   // 애니메이션 컨트롤러
   late final AnimationController _animationController;
   late final Animation<double> _floatAnimation;
@@ -25,18 +26,15 @@ class _PermissionScreenState extends State<PermissionScreen> with SingleTickerPr
   @override
   void initState() {
     super.initState();
-    
+
     // 애니메이션 설정
     _animationController = AnimationController(
       duration: const Duration(seconds: 3),
       vsync: this,
     )..repeat(reverse: true);
-    
+
     _floatAnimation = Tween<double>(begin: -10, end: 10).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
   }
 
@@ -54,10 +52,7 @@ class _PermissionScreenState extends State<PermissionScreen> with SingleTickerPr
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              AppTheme.azureStart,
-              AppTheme.azureEnd,
-            ],
+            colors: [AppTheme.azureStart, AppTheme.azureEnd],
           ),
         ),
         child: SafeArea(
@@ -84,23 +79,23 @@ class _PermissionScreenState extends State<PermissionScreen> with SingleTickerPr
                           shape: BoxShape.circle,
                           color: Colors.white.withOpacity(0.2),
                         ),
-                        child: Center(
-                          child: Image.asset(
-                            'assets/images/jellyfish_character.png',
-                            width: 150,
-                            height: 150,
-                            fit: BoxFit.contain,
-                            errorBuilder: (context, error, stackTrace) => Icon(
-                              Icons.water,
-                              color: Colors.white,
-                              size: 80,
-                            ),
-                          ),
-                        ),
+                        // child: Center(
+                        //   child: Image.asset(
+                        //     'assets/images/jellyfish_character.png',
+                        //     width: 150,
+                        //     height: 150,
+                        //     fit: BoxFit.contain,
+                        //     errorBuilder: (context, error, stackTrace) => Icon(
+                        //       Icons.water,
+                        //       color: Colors.white,
+                        //       size: 80,
+                        //     ),
+                        //   ),
+                        // ),
                       ),
                     ),
                     const SizedBox(height: 40),
-                    
+
                     // 메시지
                     const Text(
                       '해파리를 발견하기 위한 준비!',
@@ -122,7 +117,7 @@ class _PermissionScreenState extends State<PermissionScreen> with SingleTickerPr
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 60),
-                    
+
                     // 권한 요청 카드
                     GlassContainer(
                       padding: const EdgeInsets.all(24),
@@ -138,9 +133,12 @@ class _PermissionScreenState extends State<PermissionScreen> with SingleTickerPr
                             onRequest: _requestCameraPermission,
                           ),
                           const SizedBox(height: 24),
-                          Divider(color: Colors.white.withOpacity(0.2), height: 1),
+                          Divider(
+                            color: Colors.white.withOpacity(0.2),
+                            height: 1,
+                          ),
                           const SizedBox(height: 24),
-                          
+
                           // 위치 권한
                           _buildPermissionItem(
                             icon: Icons.location_on,
@@ -150,14 +148,14 @@ class _PermissionScreenState extends State<PermissionScreen> with SingleTickerPr
                             onRequest: _requestLocationPermission,
                           ),
                           const SizedBox(height: 36),
-                          
+
                           // 권한 부여 버튼
                           _buildContinueButton(),
                         ],
                       ),
                     ),
                     const SizedBox(height: 24),
-                    
+
                     // 나중에 설정하기 버튼
                     TextButton(
                       onPressed: _navigateToHome,
@@ -198,11 +196,7 @@ class _PermissionScreenState extends State<PermissionScreen> with SingleTickerPr
             color: Colors.white.withOpacity(0.2),
             shape: BoxShape.circle,
           ),
-          child: Icon(
-            icon,
-            color: Colors.white,
-            size: 26,
-          ),
+          child: Icon(icon, color: Colors.white, size: 26),
         ),
         const SizedBox(width: 16),
         Expanded(
@@ -228,33 +222,36 @@ class _PermissionScreenState extends State<PermissionScreen> with SingleTickerPr
             ],
           ),
         ),
-        Obx(() => AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          child: isGranted.value
-              ? Container(
-                  key: const ValueKey('granted'),
-                  width: 30,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.3),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.check,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                )
-              : IconButton(
-                  key: const ValueKey('request'),
-                  onPressed: onRequest,
-                  icon: const Icon(
-                    Icons.add_circle_outline,
-                    color: Colors.white,
-                    size: 26,
-                  ),
-                ),
-        )),
+        Obx(
+          () => AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            child:
+                isGranted.value
+                    ? Container(
+                      key: const ValueKey('granted'),
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.3),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.check,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    )
+                    : IconButton(
+                      key: const ValueKey('request'),
+                      onPressed: onRequest,
+                      icon: const Icon(
+                        Icons.add_circle_outline,
+                        color: Colors.white,
+                        size: 26,
+                      ),
+                    ),
+          ),
+        ),
       ],
     );
   }
@@ -262,12 +259,14 @@ class _PermissionScreenState extends State<PermissionScreen> with SingleTickerPr
   // 계속하기 버튼
   Widget _buildContinueButton() {
     return Obx(() {
-      bool allPermissionsGranted = _cameraPermissionGranted.value && _locationPermissionGranted.value;
-      
+      bool allPermissionsGranted =
+          _cameraPermissionGranted.value && _locationPermissionGranted.value;
+
       return ElevatedButton(
-        onPressed: _isRequestingPermission.value
-            ? null
-            : allPermissionsGranted
+        onPressed:
+            _isRequestingPermission.value
+                ? null
+                : allPermissionsGranted
                 ? _navigateToHomeWithConfetti
                 : _requestAllPermissions,
         style: ElevatedButton.styleFrom(
@@ -279,32 +278,35 @@ class _PermissionScreenState extends State<PermissionScreen> with SingleTickerPr
           ),
           elevation: 5,
         ),
-        child: _isRequestingPermission.value
-            ? SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
-            : Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    allPermissionsGranted ? '바다로 출발!' : '권한 부여하기',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+        child:
+            _isRequestingPermission.value
+                ? SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+                : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      allPermissionsGranted ? '바다로 출발!' : '권한 부여하기',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Icon(
-                    allPermissionsGranted ? Icons.sailing : Icons.arrow_forward,
-                    size: 20,
-                  ),
-                ],
-              ),
+                    const SizedBox(width: 8),
+                    Icon(
+                      allPermissionsGranted
+                          ? Icons.sailing
+                          : Icons.arrow_forward,
+                      size: 20,
+                    ),
+                  ],
+                ),
       );
     });
   }
@@ -312,10 +314,10 @@ class _PermissionScreenState extends State<PermissionScreen> with SingleTickerPr
   // 카메라 권한 요청
   void _requestCameraPermission() async {
     _isRequestingPermission.value = true;
-    
+
     // 실제 구현 시 권한 라이브러리 사용 (permission_handler 등)
     await Future.delayed(const Duration(seconds: 1));
-    
+
     _cameraPermissionGranted.value = true;
     _isRequestingPermission.value = false;
   }
@@ -323,10 +325,10 @@ class _PermissionScreenState extends State<PermissionScreen> with SingleTickerPr
   // 위치 권한 요청
   void _requestLocationPermission() async {
     _isRequestingPermission.value = true;
-    
+
     // 실제 구현 시 권한 라이브러리 사용 (permission_handler 등)
     await Future.delayed(const Duration(seconds: 1));
-    
+
     _locationPermissionGranted.value = true;
     _isRequestingPermission.value = false;
   }
@@ -337,7 +339,7 @@ class _PermissionScreenState extends State<PermissionScreen> with SingleTickerPr
       _requestCameraPermission();
       await Future.delayed(const Duration(seconds: 1));
     }
-    
+
     if (!_locationPermissionGranted.value) {
       _requestLocationPermission();
       await Future.delayed(const Duration(seconds: 1));
@@ -356,7 +358,7 @@ class _PermissionScreenState extends State<PermissionScreen> with SingleTickerPr
       margin: const EdgeInsets.all(16),
       duration: const Duration(seconds: 2),
     );
-    
+
     Future.delayed(const Duration(milliseconds: 500), () {
       Get.offAllNamed(AppRoutes.home);
     });
@@ -366,4 +368,4 @@ class _PermissionScreenState extends State<PermissionScreen> with SingleTickerPr
   void _navigateToHome() {
     Get.offAllNamed(AppRoutes.home);
   }
-} 
+}

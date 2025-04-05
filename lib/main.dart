@@ -16,12 +16,10 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
-    print('앱 초기화 중...');
-
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    print('Firebase 초기화 완료!');
+    print('Firebase 초기화 완료');
 
     // Hive 초기화
     await Hive.initFlutter();
@@ -37,25 +35,11 @@ void main() async {
       }
     } catch (e) {
       print('Hive 어댑터 등록 오류: $e');
-      // 어댑터 중복 오류는 무시해도 앱 실행에 문제가 없음
     }
-    // --- Hive 초기화 끝 ---
-
-    // --- IdentificationService 초기화 및 등록 추가 ---
-    print('IdentificationService 초기화 시작...');
     final identificationService = IdentificationService();
-    // 앱 시작 시 모델 로드를 시도합니다. (백그라운드에서 진행될 수 있음)
-    // 여기서 await를 사용하면 로딩 시간이 길어질 수 있으므로,
-    // identification_screen에서 사용하기 전에 isModelLoaded를 확인하는 것이 좋습니다.
-    // 여기서는 비동기 로드를 시작만 합니다.
-    identificationService
-        .loadModel()
-        .then((_) {
-          print("IdentificationService.loadModel() completed in background.");
-        })
-        .catchError((e) {
-          print("Background model loading failed: $e");
-        });
+    identificationService.loadModel().catchError((e) {
+      print("Background model loading failed: $e");
+    });
     Get.put(identificationService, permanent: true); // GetX에 등록 (앱 전체에서 사용 가능)
     print('IdentificationService 등록 완료!');
     // --- 추가 끝 ---
@@ -85,12 +69,7 @@ void main() async {
     // 퀴즈 컨트롤러 등록
     final quizController = Get.put(QuizController(), permanent: true);
 
-    // 컨트롤러 초기화 확인
-    print('UserController 상태: ${userController.hashCode}');
-    print('JellyfishController 상태: ${jellyfishController.hashCode}');
-    print('QuizController 상태: ${quizController.hashCode}');
-
-    print('앱 초기화 완료!');
+    print('앱 초기화 완료');
 
     runApp(const MyApp());
   } catch (e) {

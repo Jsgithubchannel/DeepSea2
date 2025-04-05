@@ -100,7 +100,7 @@ class _IdentificationResultScreenState extends State<IdentificationResultScreen>
         return; // 함수 종료
       } else {
         print(
-          ">>> Debug: Jellyfish FOUND - ID: ${foundJellyfish.id}, Name: ${foundJellyfish.name}",
+          ">>> FOUND - ID: ${foundJellyfish.id}, Name: ${foundJellyfish.name}",
         );
         // 해파리 데이터 할당
         _jellyfish = foundJellyfish;
@@ -110,7 +110,7 @@ class _IdentificationResultScreenState extends State<IdentificationResultScreen>
       _isNewDiscovery = !_jellyfish.isDiscovered;
 
       if (_isNewDiscovery) {
-        print('New discovery! Processing...');
+        print('새로운 해파리 발견!');
         // 1. 해파리 발견 처리
         await _jellyfishController.discoverJellyfish(widget.jellyfishId);
         // 2. 사용자 발견 카운트 증가 및 관련 경험치 추가 (UserController 내부에서 처리)
@@ -119,14 +119,13 @@ class _IdentificationResultScreenState extends State<IdentificationResultScreen>
         // _gainedExp = ExpConstants.JELLYFISH_DISCOVER; // 필요하다면 UI 표시용으로 값만 저장
         _gainedExp = 300; // ExpConstants 사용 권장
       } else {
-        print('Already discovered. Processing...');
-        // 이미 발견한 해파리를 다시 식별했을 때 경험치 (선택 사항)
-        _gainedExp = 10; // ExpConstants 사용 권장
+        print('이미 발견한 해파리');
+        // 이미 발견한 해파리를 다시 식별했을 때 경험치
+        _gainedExp = 10;
         // 이미 발견된 경우, 빌드 후 약간의 경험치 추가 예약
         if (_gainedExp > 0 && mounted) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
-              print('Adding EXP for re-discovery after build: $_gainedExp');
               _userController.addExp(_gainedExp); // 적은 경험치 추가
             }
           });

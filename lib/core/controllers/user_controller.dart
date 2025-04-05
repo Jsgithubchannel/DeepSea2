@@ -56,7 +56,6 @@ class UserController extends GetxController {
 
   /// Firebase 인증 상태 변경 처리
   Future<void> _handleAuthStateChanged(fb_auth.User? fbUser) async {
-    print("Firebase Auth State Changed: ${fbUser?.uid}");
     _isLoading.value = true; // 데이터 로드 시작
     if (fbUser != null) {
       // Firebase 로그인 상태
@@ -113,7 +112,6 @@ class UserController extends GetxController {
             (uid == null &&
                 (loadedUser.uid == null || loadedUser.uid!.isEmpty))) {
           _user.value = loadedUser;
-          print("User data loaded for key: $key");
         } else {
           print(
             "Loaded data UID mismatch. Key: $key, Loaded UID: ${loadedUser.uid}, Current Auth UID: $uid",
@@ -284,13 +282,6 @@ class UserController extends GetxController {
 
     // 레벨업 감지 및 로그 개선
     if (_user.value.level > prevLevel) {
-      // 레벨업 알림 또는 로직 추가
-      print('레벨 업! ${prevLevel} -> ${_user.value.level}');
-      print(
-        '현재 경험치: ${_user.value.exp}/${ExpConstants.requiredExpForLevel(_user.value.level)}',
-      );
-      print('새로운 칭호: ${_user.value.title}');
-
       // 레벨업 축하 메시지 표시
       Get.snackbar(
         '레벨 업!',
@@ -300,11 +291,6 @@ class UserController extends GetxController {
         colorText: Colors.white,
         duration: Duration(seconds: 4),
         icon: Icon(Icons.star, color: Colors.yellow),
-      );
-    } else {
-      // 일반 경험치 획득 로그
-      print(
-        '경험치 획득: +$amount (총: ${_user.value.exp}/${ExpConstants.requiredExpForLevel(_user.value.level)})',
       );
     }
 

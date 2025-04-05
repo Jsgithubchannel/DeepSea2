@@ -11,33 +11,36 @@ class JellyfishStingReportScreen extends StatefulWidget {
   const JellyfishStingReportScreen({Key? key}) : super(key: key);
 
   @override
-  _JellyfishStingReportScreenState createState() => _JellyfishStingReportScreenState();
+  _JellyfishStingReportScreenState createState() =>
+      _JellyfishStingReportScreenState();
 }
 
-class _JellyfishStingReportScreenState extends State<JellyfishStingReportScreen> {
-  final JellyfishController _jellyfishController = Get.find<JellyfishController>();
+class _JellyfishStingReportScreenState
+    extends State<JellyfishStingReportScreen> {
+  final JellyfishController _jellyfishController =
+      Get.find<JellyfishController>();
   final UserController _userController = Get.find<UserController>();
-  
+
   // 신고 필드
   final TextEditingController _locationController = TextEditingController();
   final TextEditingController _symptomsController = TextEditingController();
   final TextEditingController _detailsController = TextEditingController();
-  
+
   // 날짜 및 시간
   DateTime _stingDate = DateTime.now();
   TimeOfDay _stingTime = TimeOfDay.now();
-  
+
   // 로딩 상태
   final RxBool _isSubmitting = false.obs;
-  
+
   // 해파리 ID 및 이미지 경로
   String? _jellyfishId;
   String? _imagePath;
   Jellyfish? _jellyfish;
-  
+
   // 증상 체크리스트
   final RxList<String> _selectedSymptoms = <String>[].obs;
-  
+
   // 증상 목록
   final List<String> _symptomsList = [
     '통증',
@@ -49,15 +52,15 @@ class _JellyfishStingReportScreenState extends State<JellyfishStingReportScreen>
     '두통',
     '어지러움',
     '의식 저하',
-    '기타'
+    '기타',
   ];
-  
+
   @override
   void initState() {
     super.initState();
     _loadArguments();
   }
-  
+
   @override
   void dispose() {
     _locationController.dispose();
@@ -65,20 +68,20 @@ class _JellyfishStingReportScreenState extends State<JellyfishStingReportScreen>
     _detailsController.dispose();
     super.dispose();
   }
-  
+
   // 인자 로드
   void _loadArguments() {
     if (Get.arguments != null) {
       final args = Get.arguments as Map<String, dynamic>;
       _jellyfishId = args['jellyfishId'];
       _imagePath = args['imagePath'];
-      
+
       if (_jellyfishId != null) {
         _jellyfish = _jellyfishController.getJellyfishById(_jellyfishId!);
       }
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -89,10 +92,7 @@ class _JellyfishStingReportScreenState extends State<JellyfishStingReportScreen>
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              AppTheme.dangerStart,
-              AppTheme.dangerEnd,
-            ],
+            colors: [AppTheme.dangerStart, AppTheme.dangerEnd],
           ),
         ),
         child: SafeArea(
@@ -130,7 +130,7 @@ class _JellyfishStingReportScreenState extends State<JellyfishStingReportScreen>
       ),
     );
   }
-  
+
   // 앱바 위젯
   Widget _buildAppBar() {
     return Padding(
@@ -155,7 +155,7 @@ class _JellyfishStingReportScreenState extends State<JellyfishStingReportScreen>
       ),
     );
   }
-  
+
   // 경고 배너
   Widget _buildWarningBanner() {
     return Container(
@@ -196,7 +196,7 @@ class _JellyfishStingReportScreenState extends State<JellyfishStingReportScreen>
       ),
     );
   }
-  
+
   // 해파리 정보 섹션
   Widget _buildJellyfishInfo() {
     return GlassContainer(
@@ -222,32 +222,41 @@ class _JellyfishStingReportScreenState extends State<JellyfishStingReportScreen>
                 child: Container(
                   width: 80,
                   height: 80,
-                  child: _imagePath != null && _imagePath!.startsWith('http')
-                    ? Image.network(
-                        _imagePath!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          color: Colors.grey[300],
-                          child: Icon(Icons.image_not_supported, size: 30),
-                        ),
-                      )
-                    : _imagePath != null
-                        ? Image.asset(
+                  child:
+                      _imagePath != null && _imagePath!.startsWith('http')
+                          ? Image.network(
                             _imagePath!,
                             fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => Container(
-                              color: Colors.grey[300],
-                              child: Icon(Icons.image_not_supported, size: 30),
-                            ),
+                            errorBuilder:
+                                (context, error, stackTrace) => Container(
+                                  color: Colors.grey[300],
+                                  child: Icon(
+                                    Icons.image_not_supported,
+                                    size: 30,
+                                  ),
+                                ),
                           )
-                        : Container(
+                          : _imagePath != null
+                          ? Image.asset(
+                            _imagePath!,
+                            fit: BoxFit.cover,
+                            errorBuilder:
+                                (context, error, stackTrace) => Container(
+                                  color: Colors.grey[300],
+                                  child: Icon(
+                                    Icons.image_not_supported,
+                                    size: 30,
+                                  ),
+                                ),
+                          )
+                          : Container(
                             color: Colors.grey[300],
                             child: Icon(Icons.help_outline, size: 30),
                           ),
                 ),
               ),
               SizedBox(width: 16),
-              
+
               // 정보
               Expanded(
                 child: Column(
@@ -309,7 +318,7 @@ class _JellyfishStingReportScreenState extends State<JellyfishStingReportScreen>
       ),
     );
   }
-  
+
   // 신고 폼
   Widget _buildReportForm() {
     return GlassContainer(
@@ -327,7 +336,7 @@ class _JellyfishStingReportScreenState extends State<JellyfishStingReportScreen>
             ),
           ),
           SizedBox(height: 16),
-          
+
           // 위치 정보
           Text(
             '위치',
@@ -350,15 +359,21 @@ class _JellyfishStingReportScreenState extends State<JellyfishStingReportScreen>
                 borderRadius: BorderRadius.circular(10),
                 borderSide: BorderSide.none,
               ),
-              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
               suffixIcon: IconButton(
-                icon: Icon(Icons.my_location, color: Colors.white.withOpacity(0.7)),
+                icon: Icon(
+                  Icons.my_location,
+                  color: Colors.white.withOpacity(0.7),
+                ),
                 onPressed: _getCurrentLocation,
               ),
             ),
           ),
           SizedBox(height: 16),
-          
+
           // 날짜 및 시간
           Row(
             children: [
@@ -378,14 +393,21 @@ class _JellyfishStingReportScreenState extends State<JellyfishStingReportScreen>
                     GestureDetector(
                       onTap: _selectDate,
                       child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.calendar_today, color: Colors.white.withOpacity(0.7), size: 18),
+                            Icon(
+                              Icons.calendar_today,
+                              color: Colors.white.withOpacity(0.7),
+                              size: 18,
+                            ),
                             SizedBox(width: 8),
                             Text(
                               '${_stingDate.year}/${_stingDate.month}/${_stingDate.day}',
@@ -415,14 +437,21 @@ class _JellyfishStingReportScreenState extends State<JellyfishStingReportScreen>
                     GestureDetector(
                       onTap: _selectTime,
                       child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.access_time, color: Colors.white.withOpacity(0.7), size: 18),
+                            Icon(
+                              Icons.access_time,
+                              color: Colors.white.withOpacity(0.7),
+                              size: 18,
+                            ),
                             SizedBox(width: 8),
                             Text(
                               '${_stingTime.hour}:${_stingTime.minute.toString().padLeft(2, '0')}',
@@ -438,7 +467,7 @@ class _JellyfishStingReportScreenState extends State<JellyfishStingReportScreen>
             ],
           ),
           SizedBox(height: 16),
-          
+
           // 증상 체크리스트
           Text(
             '증상 (해당하는 항목 모두 선택)',
@@ -451,7 +480,7 @@ class _JellyfishStingReportScreenState extends State<JellyfishStingReportScreen>
           SizedBox(height: 8),
           _buildSymptomsCheckList(),
           SizedBox(height: 16),
-          
+
           // 기타 증상
           Text(
             '증상 설명',
@@ -475,11 +504,14 @@ class _JellyfishStingReportScreenState extends State<JellyfishStingReportScreen>
                 borderRadius: BorderRadius.circular(10),
                 borderSide: BorderSide.none,
               ),
-              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
             ),
           ),
           SizedBox(height: 16),
-          
+
           // 기타 정보
           Text(
             '추가 정보 (선택)',
@@ -503,7 +535,10 @@ class _JellyfishStingReportScreenState extends State<JellyfishStingReportScreen>
                 borderRadius: BorderRadius.circular(10),
                 borderSide: BorderSide.none,
               ),
-              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
             ),
           ),
           SizedBox(height: 12),
@@ -527,60 +562,67 @@ class _JellyfishStingReportScreenState extends State<JellyfishStingReportScreen>
       ),
     );
   }
-  
+
   // 증상 체크리스트
   Widget _buildSymptomsCheckList() {
     return Wrap(
       spacing: 8,
       runSpacing: 8,
-      children: _symptomsList.map((symptom) {
-        return Obx(() => GestureDetector(
-          onTap: () => _toggleSymptom(symptom),
-          child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: _selectedSymptoms.contains(symptom)
-                  ? Colors.red.withOpacity(0.4)
-                  : Colors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: _selectedSymptoms.contains(symptom)
-                    ? Colors.red
-                    : Colors.transparent,
-                width: 1,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  _selectedSymptoms.contains(symptom)
-                      ? Icons.check_circle
-                      : Icons.circle_outlined,
-                  color: _selectedSymptoms.contains(symptom)
-                      ? Colors.white
-                      : Colors.white.withOpacity(0.6),
-                  size: 16,
-                ),
-                SizedBox(width: 6),
-                Text(
-                  symptom,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: _selectedSymptoms.contains(symptom)
-                        ? FontWeight.bold
-                        : FontWeight.normal,
+      children:
+          _symptomsList.map((symptom) {
+            return Obx(
+              () => GestureDetector(
+                onTap: () => _toggleSymptom(symptom),
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color:
+                        _selectedSymptoms.contains(symptom)
+                            ? Colors.red.withOpacity(0.4)
+                            : Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color:
+                          _selectedSymptoms.contains(symptom)
+                              ? Colors.red
+                              : Colors.transparent,
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _selectedSymptoms.contains(symptom)
+                            ? Icons.check_circle
+                            : Icons.circle_outlined,
+                        color:
+                            _selectedSymptoms.contains(symptom)
+                                ? Colors.white
+                                : Colors.white.withOpacity(0.6),
+                        size: 16,
+                      ),
+                      SizedBox(width: 6),
+                      Text(
+                        symptom,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight:
+                              _selectedSymptoms.contains(symptom)
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
-          ),
-        ));
-      }).toList(),
+              ),
+            );
+          }).toList(),
     );
   }
-  
+
   // 응급 처치 정보
   Widget _buildFirstAidInfo() {
     return GlassContainer(
@@ -591,7 +633,11 @@ class _JellyfishStingReportScreenState extends State<JellyfishStingReportScreen>
         children: [
           Row(
             children: [
-              Icon(Icons.medical_services_outlined, color: Colors.white, size: 20),
+              Icon(
+                Icons.medical_services_outlined,
+                color: Colors.white,
+                size: 20,
+              ),
               SizedBox(width: 8),
               Text(
                 '응급 처치 정보',
@@ -612,13 +658,15 @@ class _JellyfishStingReportScreenState extends State<JellyfishStingReportScreen>
           _buildFirstAidStep(
             icon: Icons.do_not_touch,
             title: '독침 제거',
-            description: '남아있는 독침은 카드나 플라스틱 카드로 조심스럽게 긁어냅니다. 직접 손으로 만지거나 문지르지 마세요.',
+            description:
+                '남아있는 독침은 카드나 플라스틱 카드로 조심스럽게 긁어냅니다. 직접 손으로 만지거나 문지르지 마세요.',
             isWarning: true,
           ),
           _buildFirstAidStep(
             icon: Icons.heat_pump_outlined,
             title: '온/냉 찜질',
-            description: '대부분의 해파리 쏘임은 온찜질(40-45°C)이 효과적입니다. 상자해파리 쏘임은 냉찜질이 필요합니다.',
+            description:
+                '대부분의 해파리 쏘임은 온찜질(40-45°C)이 효과적입니다. 상자해파리 쏘임은 냉찜질이 필요합니다.',
           ),
           _buildFirstAidStep(
             icon: Icons.health_and_safety_outlined,
@@ -630,7 +678,7 @@ class _JellyfishStingReportScreenState extends State<JellyfishStingReportScreen>
       ),
     );
   }
-  
+
   // 응급 처치 단계
   Widget _buildFirstAidStep({
     required IconData icon,
@@ -646,7 +694,10 @@ class _JellyfishStingReportScreenState extends State<JellyfishStingReportScreen>
           width: 30,
           height: 30,
           decoration: BoxDecoration(
-            color: isWarning ? Colors.red.withOpacity(0.3) : Colors.blue.withOpacity(0.3),
+            color:
+                isWarning
+                    ? Colors.red.withOpacity(0.3)
+                    : Colors.blue.withOpacity(0.3),
             shape: BoxShape.circle,
           ),
           child: Icon(icon, color: Colors.white, size: 16),
@@ -685,7 +736,7 @@ class _JellyfishStingReportScreenState extends State<JellyfishStingReportScreen>
       ],
     );
   }
-  
+
   // 주변 병원 섹션
   Widget _buildNearbyHospitalsSection() {
     return GestureDetector(
@@ -733,46 +784,49 @@ class _JellyfishStingReportScreenState extends State<JellyfishStingReportScreen>
       ),
     );
   }
-  
+
   // 제출 버튼
   Widget _buildSubmitButton() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
-      child: Obx(() => ElevatedButton(
-        onPressed: _isSubmitting.value ? null : _submitReport,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.red.shade800,
-          padding: EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+      child: Obx(
+        () => ElevatedButton(
+          onPressed: _isSubmitting.value ? null : _submitReport,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red.shade800,
+            padding: EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            elevation: 0,
           ),
-          elevation: 0,
+          child: Container(
+            width: double.infinity,
+            alignment: Alignment.center,
+            child:
+                _isSubmitting.value
+                    ? SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                    : Text(
+                      '국립수산과학원에 신고하기',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+          ),
         ),
-        child: Container(
-          width: double.infinity,
-          alignment: Alignment.center,
-          child: _isSubmitting.value
-              ? SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 2,
-                  ),
-                )
-              : Text(
-                  '국립수산과학원에 신고하기',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-        ),
-      )),
+      ),
     );
   }
-  
+
   // 증상 토글
   void _toggleSymptom(String symptom) {
     if (_selectedSymptoms.contains(symptom)) {
@@ -781,7 +835,7 @@ class _JellyfishStingReportScreenState extends State<JellyfishStingReportScreen>
       _selectedSymptoms.add(symptom);
     }
   }
-  
+
   // 날짜 선택
   void _selectDate() async {
     final DateTime? picked = await showDatePicker(
@@ -804,14 +858,14 @@ class _JellyfishStingReportScreenState extends State<JellyfishStingReportScreen>
         );
       },
     );
-    
+
     if (picked != null && picked != _stingDate) {
       setState(() {
         _stingDate = picked;
       });
     }
   }
-  
+
   // 시간 선택
   void _selectTime() async {
     final TimeOfDay? picked = await showTimePicker(
@@ -832,25 +886,25 @@ class _JellyfishStingReportScreenState extends State<JellyfishStingReportScreen>
         );
       },
     );
-    
+
     if (picked != null && picked != _stingTime) {
       setState(() {
         _stingTime = picked;
       });
     }
   }
-  
+
   // 현재 위치 가져오기
   void _getCurrentLocation() {
     // TODO: 실제 구현에서는 위치 정보 API 활용
     _locationController.text = '현재 위치 정보를 가져오는 중...';
-    
+
     // 임시 구현: 딜레이 후 더미 데이터
     Future.delayed(Duration(seconds: 1), () {
       _locationController.text = '부산 해운대구 해운대해수욕장';
     });
   }
-  
+
   // 주변 병원 열기
   void _openNearbyHospitals() {
     // TODO: 실제 구현에서는 지도 앱이나 내부 지도 화면으로 이동
@@ -862,7 +916,7 @@ class _JellyfishStingReportScreenState extends State<JellyfishStingReportScreen>
       colorText: Colors.white,
     );
   }
-  
+
   // 신고 제출
   void _submitReport() async {
     // 유효성 검사
@@ -876,7 +930,7 @@ class _JellyfishStingReportScreenState extends State<JellyfishStingReportScreen>
       );
       return;
     }
-    
+
     if (_selectedSymptoms.isEmpty) {
       Get.snackbar(
         '입력 오류',
@@ -887,10 +941,10 @@ class _JellyfishStingReportScreenState extends State<JellyfishStingReportScreen>
       );
       return;
     }
-    
+
     // 제출 시작
     _isSubmitting.value = true;
-    
+
     try {
       // 쏘임 신고 데이터 구성
       Map<String, dynamic> reportData = {
@@ -902,15 +956,15 @@ class _JellyfishStingReportScreenState extends State<JellyfishStingReportScreen>
         'symptomsDetail': _symptomsController.text,
         'additionalInfo': _detailsController.text,
       };
-      
+
       // 로그 출력 (실제 구현에서는 API 호출)
       print('쏘임 신고 데이터: $reportData');
-      
+
       // 사용자 경험치 추가 (제보 보상)
       if (_userController != null) {
         await _userController.incrementReportedJellyfish();
       }
-      
+
       // 성공 메시지
       Get.snackbar(
         '신고 완료',
@@ -920,12 +974,11 @@ class _JellyfishStingReportScreenState extends State<JellyfishStingReportScreen>
         colorText: Colors.white,
         duration: Duration(seconds: 3),
       );
-      
+
       // 딜레이 후 이전 화면으로 돌아가기
       Future.delayed(Duration(seconds: 2), () {
         Get.back();
       });
-      
     } catch (e) {
       print('신고 에러: $e');
       Get.snackbar(
@@ -939,7 +992,7 @@ class _JellyfishStingReportScreenState extends State<JellyfishStingReportScreen>
       _isSubmitting.value = false;
     }
   }
-  
+
   // 위험도 텍스트 반환
   String _getDangerLevelText(DangerLevel level) {
     switch (level) {
@@ -955,4 +1008,4 @@ class _JellyfishStingReportScreenState extends State<JellyfishStingReportScreen>
         return '치명적';
     }
   }
-} 
+}

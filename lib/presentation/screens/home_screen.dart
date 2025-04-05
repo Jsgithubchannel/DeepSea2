@@ -25,7 +25,6 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print('HomeScreen 빌드 중...');
     return Obx(() {
       // 로딩 상태 확인
       if (_jellyfishController.isLoading || _userController.isLoading) {
