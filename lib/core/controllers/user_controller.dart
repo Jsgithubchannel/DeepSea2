@@ -254,7 +254,6 @@ class UserController extends GetxController {
     if (firebaseUser.value != null) {
       try {
         await firebaseUser.value?.updateDisplayName(name);
-        print("Firebase display name updated to: $name");
       } catch (e) {
         print("Failed to update Firebase display name: $e");
         // 오류 발생 시 로컬 이름 롤백 또는 사용자에게 알림
