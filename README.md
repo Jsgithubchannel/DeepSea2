@@ -54,10 +54,8 @@ https://youtu.be/SxcSi_jrWAU?feature=shared
 - Presentation & Core Controller → 모델 업데이트 및 데이터 흐름 제어
 - Firebase 인증, 식별 연동
 - AI 모델 inference → 위험도 분석 → 신고 데이터 전송
-
-<p align="center">
-  <img src="diagram.png" width="800"/>
-</p>
+  
+![ChatGPT Image Apr 7, 2025, 12_43_23 PM](https://github.com/user-attachments/assets/b216d767-cc70-4b3c-bffe-8c759843c661)
 
 ---
 
