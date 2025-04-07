@@ -13,6 +13,10 @@ AI 해파리 분류와 실시간 해양 안전 알림을 지원하는 **게임�
 (2배속 시청 추천드립니다.)
 https://youtu.be/SxcSi_jrWAU?feature=shared
 
+<img width="1148" alt="스크린샷 2025-04-07 오후 5 28 16" src="https://github.com/user-attachments/assets/149a30dd-1cc4-48c6-9a39-1941b36547ba" />
+<img width="1143" alt="스크린샷 2025-04-07 오후 5 28 28" src="https://github.com/user-attachments/assets/35c27757-a781-4da7-89ab-f94890e3d675" />
+
+
 ---
 
 ## 🔑 주요 기능
@@ -91,3 +95,15 @@ https://youtu.be/SxcSi_jrWAU?feature=shared
 
 - 사용자 신고 기반 위험도 예측 AI 고도화
 - 해양기관 연계 실시간 대응 시스템
+
+---
+
+## 해파리 감식반 1.0 – 프로젝트 회고
+목표: 해파리 이미지 분류 + 해양 안전·교육 앱 개발
+성과: EfficientNetB0 기반 모델 정확도 97%+, Flutter 앱에 실시간 분류·신고·업적 시스템 구현
+잘한 점: 빠른 역할 분배, 적극적 AI 도구 활용, 실시간 소통
+아쉬운 점: 시간 부족으로 모델 다양성 부족
+기술 도전: 모델 경량화, 실시간 처리 + UI 통합
+배운 점: 프롬프트 설계 역량의 중요성, 직관적인 UX의 가치
+다음 목표: 더 다양한 해양 생물 인식 확장, UX 개선, AI 지속 학습 설계
+
