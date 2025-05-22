@@ -53,7 +53,8 @@
                 <string>Editor</string>
                 <key>CFBundleURLSchemes</key>
                 <array>
-                    <string>com.googleusercontent.apps.57542990132-79apjecrbvt38d4tokmhb9c6mbh9g012</string>
+		<!-- key 삭제 완료  -->
+                    <string>key</string>
                 </array>
             </dict>
         </array>
